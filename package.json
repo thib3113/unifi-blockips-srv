@@ -1,0 +1,33 @@
+{
+  "name": "auto-downloader",
+  "version": "1.0.0",
+  "scripts": {
+    "debug": "tsc && node -r source-map-support/register build/index.js",
+    "build": "tsc && git add build",
+    "test": "jest",
+    "test-CI": "jest --ci --coverage",
+    "watch": "jest --env=jsdom --watch"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@types/node": "^14.14.33",
+    "app-root-path": "^3.0.0",
+    "axios": "^0.21.1",
+    "debug": "^4.3.1",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "node-unifi": "^1.4.0",
+    "source-map-support": "^0.5.19",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.1.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.11",
+    "@typescript-eslint/eslint-plugin": "4.12.0",
+    "@typescript-eslint/parser": "4.12.0",
+    "eslint": "7.17.0",
+    "eslint-config-prettier": "7.1.0",
+    "eslint-plugin-prettier": "3.3.1",
+    "prettier": "2.2.1"
+  }
+}
