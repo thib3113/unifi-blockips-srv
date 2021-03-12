@@ -12,9 +12,9 @@ COPY ./docker/entrypoint.sh /usr/local/bin/
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 RUN ln -s usr/local/bin/docker-entrypoint.sh /
 
-RUN mkdir -p ./tmp/ && \
-    . ./tmp && \
-    cd ./tmp && \
+RUN mkdir -p /tmp/src && \
+    . /tmp/src && \
+    cd /tmp/src && \
     ls -alh && \
     yarn install --production=false && \
     yarn build && \
@@ -22,6 +22,7 @@ RUN mkdir -p ./tmp/ && \
     mv package.json /app
     
 RUN rm -Rf /tmp/src
+RUN cd /app
 RUN yarn install --prod
 
 
