@@ -1,4 +1,4 @@
-FROM node:lts
+FROM node:lts-alpine
 LABEL maintainer="thibaut severac <thib3113@gmail.com>"
 
 RUN apk add --no-cache yarn
