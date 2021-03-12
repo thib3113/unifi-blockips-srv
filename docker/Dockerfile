@@ -12,7 +12,8 @@ COPY ./docker/entrypoint.sh /usr/local/bin/
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 RUN ln -s usr/local/bin/docker-entrypoint.sh /
 
-COPY . ./tmp/src
+RUN mkdir -p /tmp/src
+COPY . /tmp/src
 
 RUN cd /tmp/src
 RUN yarn install --production=false
