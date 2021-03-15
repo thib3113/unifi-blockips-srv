@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "debug": "tsc && node -r source-map-support/register build/index.js",
+    "start": "node -r source-map-support/register build/index.js",
     "build": "tsc",
     "test": "jest",
     "test-CI": "jest --ci --coverage",
