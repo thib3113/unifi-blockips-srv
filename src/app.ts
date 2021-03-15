@@ -2,7 +2,9 @@ import unifi from 'node-unifi';
 import { IFWRule, IGroup, ISite } from './interfaces';
 import express from 'express';
 import * as crypto from 'crypto';
+import debugu from 'debug';
 
+const debug = debugu('unifi-blockips-srv');
 export default class App {
     private readonly controllerIp: string;
     private readonly controllerPort: number;
@@ -20,6 +22,7 @@ export default class App {
     private port: number;
 
     constructor() {
+        debug('App.construct()');
         this.controllerIp = process.env.UNIFI_CONTROLLER_IP;
         this.controllerPort = Number(process.env.UNIFI_CONTROLLER_PORT);
         this.unifiUsername = process.env.UNIFI_USERNAME;
@@ -34,6 +37,7 @@ export default class App {
     }
 
     public async start() {
+        debug('App.start()');
         this.controller = new unifi.Controller(this.controllerIp, this.controllerPort);
 
         await this.promisify((cb) => {
@@ -82,12 +86,14 @@ export default class App {
             try {
                 const { token: pToken, ips: pIps } = req.query;
                 const token = (Array.isArray(pToken) ? pToken.shift() : pToken).toString();
+                debug('ask to ban ips');
                 if (App.getCheckSum(token) != this.addCheckSum) {
+                    debug('token to add ban invalid');
                     return res.status(401).send();
                 }
 
                 const ips = (Array.isArray(pIps) ? pIps : [pIps]).map((i) => i.toString());
-
+                debug('ask to ban ips %s', JSON.stringify(ips));
                 await this.addIps(ips);
                 res.status(200).send();
             } catch (e) {
@@ -99,12 +105,15 @@ export default class App {
         app.delete('/', async (req, res, next) => {
             try {
                 const { token: pToken, ips: pIps } = req.query;
+                debug('ask to unban ips');
                 const token = (Array.isArray(pToken) ? pToken.shift() : pToken).toString();
                 if (App.getCheckSum(token) != this.rmCheckSum) {
+                    debug('token to remove ban invalid');
                     return res.status(401).send();
                 }
 
                 const ips = (Array.isArray(pIps) ? pIps : [pIps]).map((i) => i.toString());
+                debug('ask to unban ips %s', JSON.stringify(ips));
 
                 await this.removeIps(ips);
                 res.status(200).send();
