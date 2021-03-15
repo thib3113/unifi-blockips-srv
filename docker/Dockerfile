@@ -22,7 +22,6 @@ RUN cd /tmp/src && \
 
 RUN rm -Rf /tmp/src
 RUN yarn install --prod
-RUN ls -alh /app/node_modules
 
 
 #HEALTHCHECK --interval=1m --timeout=3s \
