@@ -3,9 +3,6 @@ LABEL maintainer="thibaut severac <thib3113@gmail.com>"
 
 RUN apk add --no-cache yarn
 
-#add node_modules in cache
-VOLUME /app/node_modules
-
 WORKDIR /app
 
 COPY ./docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
@@ -24,8 +21,8 @@ RUN cd /tmp/src && \
     mv package.json /app
 
 RUN rm -Rf /tmp/src
-RUN cd /app
 RUN yarn install --prod
+RUN ls -alh /app/node_modules
 
 
 #HEALTHCHECK --interval=1m --timeout=3s \
