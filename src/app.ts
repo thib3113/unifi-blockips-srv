@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import debugu from 'debug';
 
 const debug = debugu('unifi-blockips-srv');
+const debugReq = debugu('unifi-blockips-srv:unifi');
 export default class App {
     private readonly controllerIp: string;
     private readonly controllerPort: number;
@@ -21,6 +22,13 @@ export default class App {
     private rmCheckSum: string;
     private port: number;
 
+    private loginPromise: Promise<void>;
+    private loggedIn: boolean = false;
+    // each 30 minutes, because token seems to expire after 1h
+    private loginTimer: number = 30 * 60 * 1000;
+    // private loginTimeout;
+    private loginTimeout: NodeJS.Timeout;
+
     constructor() {
         debug('App.construct()');
         this.controllerIp = process.env.UNIFI_CONTROLLER_IP;
@@ -36,20 +44,63 @@ export default class App {
         this.port = Number(process.env.PORT);
     }
 
+    public async loginProcess() {
+        debug('App.loginProcess()');
+        if (this.loginTimeout) {
+            clearTimeout(this.loginTimeout);
+        }
+
+        this.loginPromise = new Promise<void>(async (resolve, reject) => {
+            try {
+                if (this.loggedIn) {
+                    await this.promisify((cb) => {
+                        debug('controller logout');
+                        this.controller.logout(cb);
+                    }, true);
+                }
+
+                await this.promisify((cb) => {
+                    debug('controller login');
+                    this.controller.login(this.unifiUsername, this.unifiPassword, cb);
+                }, true);
+                debug('controller logged');
+
+                this.loggedIn = true;
+                resolve();
+            } catch (e) {
+                reject(e);
+            }
+
+            this.loginTimeout = setTimeout(() => {
+                this.loginTimeout = null;
+                this.loginProcess();
+            }, this.loginTimer);
+        });
+
+        await this.loginPromise;
+
+        return this.loginPromise;
+    }
+
     public async start() {
         debug('App.start()');
         this.controller = new unifi.Controller(this.controllerIp, this.controllerPort);
 
-        await this.promisify((cb) => {
-            this.controller.login(this.unifiUsername, this.unifiPassword, cb);
-        });
+        await this.loginProcess();
+
+        // await this.promisify((cb) => {
+        //     this.controller.login(this.unifiUsername, this.unifiPassword, cb);
+        // });
 
         //Get sites
+        debug('App.start() : load sites');
         const [tmpSites] = await this.promisify<Array<ISite>>((cb) => {
             this.controller.getSites(cb);
         });
 
         const sites = Array.isArray(tmpSites) ? tmpSites : [tmpSites];
+
+        debug('App.start() : %d sites loaded', sites.length);
 
         //search site in settings
         if (this.unifiSiteName) {
@@ -63,14 +114,18 @@ export default class App {
             }
             this.currentSite = sites.shift();
         }
+        debug('App.start() : current site %s', this.currentSite?.name);
 
         if (!this.unifiFWRuleName) {
             throw new Error('env.UNIFI_FW_RULE_NAME is mandatory');
         }
+        debug('App.start() : load FW rules');
         const [[tmpRules]] = await this.promisify<Array<Array<IFWRule>>>((cb) => {
             this.controller.getFirewallRules(this.currentSite.name, cb);
         });
         const rules = Array.isArray(tmpRules) ? tmpRules : [tmpRules];
+
+        debug('App.start() : %d rules loaded', rules.length);
 
         this.currentFWRule = rules.find((r) => r.name === this.unifiFWRuleName);
         if (!this.currentFWRule) {
@@ -136,12 +191,15 @@ export default class App {
     }
 
     private async getBlockGroup(): Promise<IGroup> {
+        debug('App.getBlockGroup()');
         const [[tmpGroups]] = await this.promisify<Array<Array<IGroup>>>((cb) => {
             this.controller.getFirewallGroups(this.currentSite.name, cb);
         });
         const groups = Array.isArray(tmpGroups) ? tmpGroups : [tmpGroups];
 
-        const currentGroup = groups.find((r) => r.name === this.unifiFWGroupName);
+        debug('App.getBlockGroup() : %d groups loaded', groups.length);
+
+        const currentGroup = groups.find((r) => r && r.name === this.unifiFWGroupName);
         if (!currentGroup) {
             throw new Error(`fail to get group "${this.unifiFWGroupName}"`);
         }
@@ -153,6 +211,7 @@ export default class App {
     }
 
     public async updateGroup(group: IGroup) {
+        debug('App.updateGroup() : %s', group.name);
         const [[ret]] = await this.promisify<Array<Array<IGroup>>>((cb) => {
             this.controller.editFirewallGroup(
                 this.currentSite.name,
@@ -189,14 +248,17 @@ export default class App {
         await this.updateGroup(group);
     }
 
-    private async promisify<T>(fn: (cb) => void): Promise<Array<T> | T> {
+    private async promisify<T>(fn: (cb) => void, loginProcess = false): Promise<Array<T> | T> {
         return new Promise((resolve, reject) => {
-            fn((err, ...args) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(args);
-                }
+            (loginProcess ? Promise.resolve() : this.loginPromise).then(() => {
+                fn((err, ...args) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        debugReq(...args);
+                        resolve(args);
+                    }
+                });
             });
         });
     }
