@@ -2,10 +2,10 @@ import unifi from 'node-unifi';
 import { IFWRule, IGroup, ISite } from './interfaces';
 import express from 'express';
 import * as crypto from 'crypto';
-import debugu from 'debug';
+import createDebug from 'debug';
 
-const debug = debugu('unifi-blockips-srv');
-const debugReq = debugu('unifi-blockips-srv:unifi');
+const debug = createDebug('unifi-blockips-srv');
+const debugReq = debug.extend('unifi');
 export default class App {
     private readonly controllerIp: string;
     private readonly controllerPort: number;
@@ -255,6 +255,7 @@ export default class App {
                     if (err) {
                         reject(err);
                     } else {
+                        // @ts-ignore
                         debugReq(...args);
                         resolve(args);
                     }
