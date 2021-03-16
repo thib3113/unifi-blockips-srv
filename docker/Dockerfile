@@ -14,7 +14,6 @@ RUN mkdir -p /tmp/src
 COPY . /tmp/src
 
 RUN cd /tmp/src && \
-    ls -alh && \
     yarn install --production=false && \
     yarn build && \
     mv build /app && \
