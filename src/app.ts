@@ -28,6 +28,7 @@ export default class App {
     private loginTimer: number = 30 * 60 * 1000;
     // private loginTimeout;
     private loginTimeout: NodeJS.Timeout;
+    private tasks: Array<{ method: 'add' | 'del'; ips: Array<string> }> = [];
 
     constructor() {
         debug('App.construct()');
@@ -42,6 +43,58 @@ export default class App {
         this.addCheckSum = process.env.ADD_CHECKSUM;
         this.rmCheckSum = process.env.RM_CHECKSUM || this.addCheckSum;
         this.port = Number(process.env.PORT);
+    }
+
+    private sanitizeIp(ip: string): string {
+        // ip/32 === ip
+        return ip.replace('/32', '');
+    }
+
+    private timeout: NodeJS.Timeout;
+    private taskPromise: Promise<void> = null;
+    public addTask(method: 'add' | 'del', pIps: string | Array<string>) {
+        debug('addTask(%s, %s)', method, JSON.stringify(pIps));
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+        }
+
+        const ips = Array.isArray(pIps) ? pIps : [pIps];
+
+        this.tasks.push({
+            method,
+            ips
+        });
+
+        this.timeout = setTimeout(async () => {
+            if (this.taskPromise) {
+                await this.taskPromise;
+            }
+
+            this.taskPromise = new Promise<void>(async (resolve, reject) => {
+                try {
+                    const tasks = this.tasks;
+                    this.tasks = [];
+                    debug('addTask : execute %d tasks', tasks.length);
+
+                    let stack: Array<string> = [];
+                    let previousMethod: 'add' | 'del';
+                    let group = await this.getBlockGroup();
+                    tasks.forEach(({ method, ips }, i, arr) => {
+                        if ((method != previousMethod && stack.length > 0) || i === arr.length - 1) {
+                            group = previousMethod === 'add' ? this._addIps(stack, group) : this._removeIps(stack, group);
+                            stack = [];
+                            previousMethod = method;
+                        } else {
+                            stack = stack.concat(ips);
+                        }
+                    });
+                    await this.updateGroup(group);
+                    resolve();
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }, 5000);
     }
 
     public async loginProcess() {
@@ -149,7 +202,11 @@ export default class App {
 
                 const ips = (Array.isArray(pIps) ? pIps : [pIps]).map((i) => i.toString());
                 debug('ask to ban ips %s', JSON.stringify(ips));
-                await this.addIps(ips);
+                this.addTask(
+                    'add',
+                    ips.map((i) => this.sanitizeIp(i))
+                );
+                // await this.addIps(ips);
                 res.status(200).send();
             } catch (e) {
                 console.error(e);
@@ -170,7 +227,11 @@ export default class App {
                 const ips = (Array.isArray(pIps) ? pIps : [pIps]).map((i) => i.toString());
                 debug('ask to unban ips %s', JSON.stringify(ips));
 
-                await this.removeIps(ips);
+                this.addTask(
+                    'del',
+                    ips.map((i) => this.sanitizeIp(i))
+                );
+                // await this.removeIps(ips);
                 res.status(200).send();
             } catch (e) {
                 console.error(e);
@@ -226,6 +287,15 @@ export default class App {
         return ret;
     }
 
+    private _addIps(ips: Array<string>, group: IGroup): IGroup {
+        ips.forEach((addIp) => {
+            if (!group.group_members.includes(addIp)) {
+                group.group_members.push(addIp);
+            }
+        });
+        return group;
+    }
+
     public async addIps(ips: Array<string>) {
         //get group to update it
         const group = await this.getBlockGroup();
@@ -236,6 +306,13 @@ export default class App {
         });
 
         await this.updateGroup(group);
+    }
+
+    private _removeIps(ips: Array<string>, group: IGroup): IGroup {
+        ips.forEach((delIp) => {
+            group.group_members = group.group_members.filter((ip) => ip != delIp);
+        });
+        return group;
     }
 
     public async removeIps(ips: Array<string>) {
