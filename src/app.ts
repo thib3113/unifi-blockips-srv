@@ -1,39 +1,35 @@
-import unifi from 'node-unifi';
-import { IFWRule, IGroup, ISite } from './interfaces';
+import Controller, { FWGroup, FWRule, Site } from 'unifi-client';
 import express from 'express';
 import * as crypto from 'crypto';
 import createDebug from 'debug';
+import { TasksBuffer } from './TasksBuffer';
+
+const enum EMethods {
+    ADD,
+    DEL
+}
 
 const debug = createDebug('unifi-blockips-srv');
-const debugReq = debug.extend('unifi');
 export default class App {
-    private readonly controllerIp: string;
-    private readonly controllerPort: number;
     private readonly unifiUsername: string;
     private readonly unifiPassword: string;
     private readonly unifiSiteName: string;
     private readonly unifiFWRuleName: string;
     private readonly unifiFWGroupName: string;
 
-    private currentSite: ISite;
-    private currentFWRule: IFWRule;
-    private controller: unifi.Controller;
-    private addCheckSum: string;
-    private rmCheckSum: string;
-    private port: number;
+    private currentSite: Site;
+    private currentFWRule: FWRule;
+    private readonly addCheckSum: string;
+    private readonly rmCheckSum: string;
+    private readonly port: number;
 
-    private loginPromise: Promise<void>;
-    private loggedIn: boolean = false;
-    // each 30 minutes, because token seems to expire after 1h
-    private loginTimer: number = 30 * 60 * 1000;
-    // private loginTimeout;
-    private loginTimeout: NodeJS.Timeout;
-    private tasks: Array<{ method: 'add' | 'del'; ips: Array<string> }> = [];
+    private readonly controllerUrl: string;
+    private controller: Controller;
+    private tasksBuffer: TasksBuffer<{ taskMethod: EMethods; currentIps: Array<string> }>;
 
     constructor() {
         debug('App.construct()');
-        this.controllerIp = process.env.UNIFI_CONTROLLER_IP;
-        this.controllerPort = Number(process.env.UNIFI_CONTROLLER_PORT);
+        this.controllerUrl = process.env.UNIFI_CONTROLLER_URL;
         this.unifiUsername = process.env.UNIFI_USERNAME;
         this.unifiPassword = process.env.UNIFI_PASSWORD;
         this.unifiSiteName = process.env.UNIFI_SITE_NAME;
@@ -42,7 +38,7 @@ export default class App {
 
         this.addCheckSum = process.env.ADD_CHECKSUM;
         this.rmCheckSum = process.env.RM_CHECKSUM || this.addCheckSum;
-        this.port = Number(process.env.PORT);
+        this.port = Number(process.env.PORT) || 3000;
     }
 
     private sanitizeIp(ip: string): string {
@@ -50,147 +46,31 @@ export default class App {
         return ip.replace('/32', '');
     }
 
-    private timeout: NodeJS.Timeout;
     private taskPromise: Promise<void> = null;
-    public addTask(method: 'add' | 'del', pIps: string | Array<string>) {
-        debug('addTask(%s, %s)', method, JSON.stringify(pIps));
-        if (this.timeout) {
-            clearTimeout(this.timeout);
-        }
 
-        const ips = Array.isArray(pIps) ? pIps : [pIps];
-
-        this.tasks.push({
-            method,
-            ips
-        });
-
-        this.timeout = setTimeout(async () => {
-            if (this.taskPromise) {
-                await this.taskPromise;
-            }
-
-            this.taskPromise = new Promise<void>(async (resolve, reject) => {
-                try {
-                    const tasks = this.tasks;
-                    this.tasks = [];
-                    debug('addTask : execute %d tasks', tasks.length);
-
-                    let stack: Array<string> = [];
-                    let previousMethod: 'add' | 'del';
-                    let group = await this.getBlockGroup();
-                    tasks.forEach(({ method, ips }, i, arr) => {
-                        if ((method != previousMethod && stack.length > 0) || i === arr.length - 1) {
-                            group = previousMethod === 'add' ? this._addIps(stack, group) : this._removeIps(stack, group);
-                            stack = [];
-                            previousMethod = method;
-                        } else {
-                            stack = stack.concat(ips);
-                        }
-                    });
-                    await this.updateGroup(group);
-                    resolve();
-                } catch (e) {
-                    reject(e);
-                }
-            });
-        }, 5000);
-    }
-
-    public async loginProcess() {
-        debug('App.loginProcess()');
-        if (this.loginTimeout) {
-            clearTimeout(this.loginTimeout);
-        }
-
-        this.loginPromise = new Promise<void>(async (resolve, reject) => {
-            try {
-                if (this.loggedIn) {
-                    await this.promisify((cb) => {
-                        debug('controller logout');
-                        this.controller.logout(cb);
-                    }, true);
-                }
-
-                await this.promisify((cb) => {
-                    debug('controller login');
-                    this.controller.login(this.unifiUsername, this.unifiPassword, cb);
-                }, true);
-                debug('controller logged');
-
-                this.loggedIn = true;
-                resolve();
-            } catch (e) {
-                reject(e);
-            }
-
-            this.loginTimeout = setTimeout(() => {
-                this.loginTimeout = null;
-                this.loginProcess();
-            }, this.loginTimer);
-        });
-
-        await this.loginPromise;
-
-        return this.loginPromise;
-    }
-
-    public async start() {
+    public async start(): Promise<void> {
         debug('App.start()');
-        this.controller = new unifi.Controller(this.controllerIp, this.controllerPort);
-
-        await this.loginProcess();
-
-        // await this.promisify((cb) => {
-        //     this.controller.login(this.unifiUsername, this.unifiPassword, cb);
-        // });
-
-        //Get sites
-        debug('App.start() : load sites');
-        const [tmpSites] = await this.promisify<Array<ISite>>((cb) => {
-            this.controller.getSites(cb);
+        this.controller = new Controller({
+            username: this.unifiUsername,
+            password: this.unifiPassword,
+            url: this.controllerUrl,
+            strictSSL: false
         });
 
-        const sites = Array.isArray(tmpSites) ? tmpSites : [tmpSites];
+        await this.controller.login();
 
-        debug('App.start() : %d sites loaded', sites.length);
+        await this.selectSite();
 
-        //search site in settings
-        if (this.unifiSiteName) {
-            this.currentSite = sites.find((s) => s.name === this.unifiSiteName);
-            if (!this.currentSite) {
-                throw new Error(`fail to get site "${this.unifiSiteName}"`);
-            }
-        } else {
-            if (sites.length === 0) {
-                throw new Error('no sites found !');
-            }
-            this.currentSite = sites.shift();
-        }
-        debug('App.start() : current site %s', this.currentSite?.name);
-
-        if (!this.unifiFWRuleName) {
-            throw new Error('env.UNIFI_FW_RULE_NAME is mandatory');
-        }
-        debug('App.start() : load FW rules');
-        const [[tmpRules]] = await this.promisify<Array<Array<IFWRule>>>((cb) => {
-            this.controller.getFirewallRules(this.currentSite.name, cb);
-        });
-        const rules = Array.isArray(tmpRules) ? tmpRules : [tmpRules];
-
-        debug('App.start() : %d rules loaded', rules.length);
-
-        this.currentFWRule = rules.find((r) => r.name === this.unifiFWRuleName);
-        if (!this.currentFWRule) {
-            throw new Error(`fail to get rule "${this.unifiFWRuleName}"`);
-        }
+        await this.selectFWRule();
 
         //try to get block group
         await this.getBlockGroup();
 
+        this.tasksBuffer = new TasksBuffer((tasks) => this.handleTasks(tasks));
+
         //start webserver
         const app = express();
-        app.post('/', async (req, res, next) => {
+        app.post('/', async (req, res) => {
             try {
                 const { token: pToken, ips: pIps } = req.query;
                 const token = (Array.isArray(pToken) ? pToken.shift() : pToken).toString();
@@ -202,11 +82,11 @@ export default class App {
 
                 const ips = (Array.isArray(pIps) ? pIps : [pIps]).map((i) => i.toString());
                 debug('ask to ban ips %s', JSON.stringify(ips));
-                this.addTask(
-                    'add',
-                    ips.map((i) => this.sanitizeIp(i))
-                );
-                // await this.addIps(ips);
+                this.tasksBuffer.addTask({
+                    taskMethod: EMethods.ADD,
+                    currentIps: ips.map((i) => this.sanitizeIp(i))
+                });
+
                 res.status(200).send();
             } catch (e) {
                 console.error(e);
@@ -214,7 +94,7 @@ export default class App {
             }
         });
 
-        app.delete('/', async (req, res, next) => {
+        app.delete('/', async (req, res) => {
             try {
                 const { token: pToken, ips: pIps } = req.query;
                 debug('ask to unban ips');
@@ -227,10 +107,10 @@ export default class App {
                 const ips = (Array.isArray(pIps) ? pIps : [pIps]).map((i) => i.toString());
                 debug('ask to unban ips %s', JSON.stringify(ips));
 
-                this.addTask(
-                    'del',
-                    ips.map((i) => this.sanitizeIp(i))
-                );
+                this.tasksBuffer.addTask({
+                    taskMethod: EMethods.DEL,
+                    currentIps: ips.map((i) => this.sanitizeIp(i))
+                });
                 // await this.removeIps(ips);
                 res.status(200).send();
             } catch (e) {
@@ -251,12 +131,9 @@ export default class App {
             .digest('hex');
     }
 
-    private async getBlockGroup(): Promise<IGroup> {
+    private async getBlockGroup(): Promise<FWGroup> {
         debug('App.getBlockGroup()');
-        const [[tmpGroups]] = await this.promisify<Array<Array<IGroup>>>((cb) => {
-            this.controller.getFirewallGroups(this.currentSite.name, cb);
-        });
-        const groups = Array.isArray(tmpGroups) ? tmpGroups : [tmpGroups];
+        const groups = await this.currentSite.firewall.getGroups();
 
         debug('App.getBlockGroup() : %d groups loaded', groups.length);
 
@@ -271,73 +148,84 @@ export default class App {
         return currentGroup;
     }
 
-    public async updateGroup(group: IGroup) {
-        debug('App.updateGroup() : %s', group.name);
-        const [[ret]] = await this.promisify<Array<Array<IGroup>>>((cb) => {
-            this.controller.editFirewallGroup(
-                this.currentSite.name,
-                group._id,
-                group.site_id,
-                group.name,
-                group.group_type,
-                cb,
-                group.group_members
-            );
-        });
-        return ret;
+    private _addIps(ip: string, ips: Array<string>): Array<string> {
+        if (!ips.includes(ip)) {
+            ips.push(ip);
+        }
+
+        return ips;
     }
 
-    private _addIps(ips: Array<string>, group: IGroup): IGroup {
-        ips.forEach((addIp) => {
-            if (!group.group_members.includes(addIp)) {
-                group.group_members.push(addIp);
+    private _removeIps(ip: string, ips: Array<string>): Array<string> {
+        return ips.filter((i) => i != ip);
+    }
+
+    private async selectSite(): Promise<void> {
+        //Get sites
+        debug('App.selectSite() : load sites');
+        const sites = await this.controller.getSites();
+
+        debug('App.selectSite() : %d sites loaded', sites.length);
+
+        //search site in settings
+        if (this.unifiSiteName) {
+            this.currentSite = sites.find((s) => s.name === this.unifiSiteName);
+            if (!this.currentSite) {
+                throw new Error(`fail to get site "${this.unifiSiteName}"`);
             }
-        });
-        return group;
-    }
-
-    public async addIps(ips: Array<string>) {
-        //get group to update it
-        const group = await this.getBlockGroup();
-        ips.forEach((addIp) => {
-            if (!group.group_members.includes(addIp)) {
-                group.group_members.push(addIp);
+        } else {
+            if (sites.length === 0) {
+                throw new Error('no sites found !');
             }
-        });
-
-        await this.updateGroup(group);
+            this.currentSite = sites.shift();
+        }
+        debug('App.selectSite() : current site %s', this.currentSite?.name);
     }
 
-    private _removeIps(ips: Array<string>, group: IGroup): IGroup {
-        ips.forEach((delIp) => {
-            group.group_members = group.group_members.filter((ip) => ip != delIp);
-        });
-        return group;
+    private async selectFWRule(): Promise<void> {
+        if (!this.unifiFWRuleName) {
+            throw new Error('env.UNIFI_FW_RULE_NAME is mandatory');
+        }
+        debug('App.selectFWRule() : load FW rules');
+        const rules = await this.currentSite.firewall.getRules();
+
+        debug('App.selectFWRule() : %d rules loaded', rules.length);
+
+        this.currentFWRule = rules.find((r) => r.name === this.unifiFWRuleName);
+        if (!this.currentFWRule) {
+            throw new Error(`fail to get rule "${this.unifiFWRuleName}"`);
+        }
     }
 
-    public async removeIps(ips: Array<string>) {
-        //get group to update it
-        const group = await this.getBlockGroup();
-        ips.forEach((delIp) => {
-            group.group_members = group.group_members.filter((ip) => ip != delIp);
-        });
+    private async handleTasks(tasks: Array<{ taskMethod: EMethods; currentIps: Array<string> }>): Promise<void> {
+        if (this.taskPromise) {
+            await this.taskPromise;
+        }
 
-        await this.updateGroup(group);
-    }
+        this.taskPromise = new Promise<void>(async (resolve, reject) => {
+            try {
+                debug('addTask : execute %d tasks', tasks.length);
 
-    private async promisify<T>(fn: (cb) => void, loginProcess = false): Promise<Array<T> | T> {
-        return new Promise((resolve, reject) => {
-            (loginProcess ? Promise.resolve() : this.loginPromise).then(() => {
-                fn((err, ...args) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        // @ts-ignore
-                        debugReq(...args);
-                        resolve(args);
-                    }
+                let group = await this.getBlockGroup();
+
+                //first flat tasks
+                const flatTasks: Array<{ ip: string; method: EMethods }> = [].concat.apply(
+                    [],
+                    tasks.map((task) => task.currentIps.map((ip) => ({ ip, method: task.taskMethod })))
+                );
+
+                let ips = group.group_members;
+                flatTasks.forEach(({ method, ip }) => {
+                    ips = method === EMethods.ADD ? this._addIps(ip, ips) : this._removeIps(ip, ips);
                 });
-            });
+
+                group.group_members = ips;
+                await group.save();
+                debug(await this.getBlockGroup());
+                resolve();
+            } catch (e) {
+                reject(e);
+            }
         });
     }
 }
