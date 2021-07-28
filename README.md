@@ -1,5 +1,7 @@
 # unifi-blockips-srv
 
+[![Docker Pulls](https://img.shields.io/docker/pulls/thib3113/unifi-blockips-srv.svg)](https://hub.docker.com/r/thib3113/unifi-blockips-srv)
+
 ## ENV
 
 | key | description | mandatory |
