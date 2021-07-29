@@ -1,6 +1,6 @@
 {
   "name": "unifi-blockips-srv",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "scripts": {
     "debug": "tsc && node -r source-map-support/register build/index.js",
     "start": "node -r source-map-support/register build/index.js",
