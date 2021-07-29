@@ -2,10 +2,6 @@
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/thib3113/unifi-blockips-srv.svg)](https://hub.docker.com/r/thib3113/unifi-blockips-srv)
 
-## TAGS
-
-[TODO add tags when ready]
-
 ## ENV
 
 | key | description | mandatory |
@@ -81,8 +77,18 @@ services:
     environment:
       PORT: 3000
 ```
-# Configurations for [EDR](https://en.wikipedia.org/wiki/Endpoint_detection_and_response)
 
+## PM2
+
+[read more about PM2](https://pm2.keymetrics.io/)
+
+```shell
+git clone git@github.com:thib3113/unifi-blockips-srv.git
+npm run build
+pm2 start
+```
+
+# Configurations for [EDR](https://en.wikipedia.org/wiki/Endpoint_detection_and_response)
 ## Crowdsec
 - use [custom bouncer](https://github.com/crowdsecurity/cs-custom-bouncer)
 - use a script like :
