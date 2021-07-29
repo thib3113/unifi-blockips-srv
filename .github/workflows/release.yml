@@ -50,6 +50,10 @@ jobs:
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+      - name: ls
+        run: |
+          ls -alh 
+          pwd
       -
         name: Update repo description
         uses: peter-evans/dockerhub-description@v2
