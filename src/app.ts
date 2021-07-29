@@ -29,8 +29,17 @@ export default class App {
 
     constructor() {
         debug('App.construct()');
+        if (!process.env.UNIFI_CONTROLLER_URL) {
+            throw new Error('please fill process.env.UNIFI_CONTROLLER_URL');
+        }
         this.controllerUrl = process.env.UNIFI_CONTROLLER_URL;
+        if (!process.env.UNIFI_USERNAME) {
+            throw new Error('please fill process.env.UNIFI_USERNAME');
+        }
         this.unifiUsername = process.env.UNIFI_USERNAME;
+        if (!process.env.UNIFI_PASSWORD) {
+            throw new Error('please fill process.env.UNIFI_PASSWORD');
+        }
         this.unifiPassword = process.env.UNIFI_PASSWORD;
         this.unifiSiteName = process.env.UNIFI_SITE_NAME;
         this.unifiFWRuleName = process.env.UNIFI_FW_RULE_NAME;
@@ -50,6 +59,7 @@ export default class App {
 
     public async start(): Promise<void> {
         debug('App.start()');
+
         this.controller = new Controller({
             username: this.unifiUsername,
             password: this.unifiPassword,
