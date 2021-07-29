@@ -3,8 +3,12 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/thib3113/unifi-blockips-srv.svg)](https://hub.docker.com/r/thib3113/unifi-blockips-srv)
 
 ## TAGS
-
-[TODO add tags when ready]
+They work like this : 
+ - `latest` : the latest version out
+ - `sha-<sha>` : a precise build for a precise commit, `<sha>` will be the short sha of the commit
+ - `1` : the latest version with major `1` (eg. `1.*.*`)
+ - `1.1` : the latest version with major `1` and minor `1` (eg. `1.1.*`)
+ - `1.1.1` : the latest version with major `1`, minor `1` and patch `1` (eg. `1.1.1*`)
 
 ## ENV
 
@@ -46,6 +50,8 @@ and
 # How to run the app
 
 ## Docker
+the image is built automatically for `linux/amd64`,`linux/arm64` and `linux/arm/v7` (so in theory compatible with raspberry pi and other arm IoT)
+
 `docker run thib3113/unifi-blockips-srv`
 
 or with docker compose / swarm:

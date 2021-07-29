@@ -42,6 +42,8 @@ and
 # How to run the app
 
 ## Docker
+the image is built automatically for `linux/amd64`,`linux/arm64` and `linux/arm/v7` (so in theory compatible with raspberry pi and other arm IoT)
+
 `docker run thib3113/unifi-blockips-srv`
 
 or with docker compose / swarm:
