@@ -18,7 +18,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            thib3113/unifi-blockips-srv
+            ${{ github.event.repository.full_name }}
           # generate Docker tags based on the following events/attributes
           tags: |
             type=semver,pattern={{version}}
@@ -50,16 +50,3 @@ jobs:
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
-      - name: ls
-        run: |
-          ls -alh 
-          pwd
-      -
-        name: Update repo description
-        uses: peter-evans/dockerhub-description@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: thib3113/unifi-blockips-srv
-          readme-filepath: ./README.md
-          short-description: ${{ github.event.repository.description }}
