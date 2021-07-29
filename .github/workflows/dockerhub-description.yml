@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - README.md
+      - docker/README.md
       - .github/workflows/dockerhub-description.yml
 jobs:
   dockerHubDescription:
@@ -19,3 +19,4 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ github.event.repository.full_name }}
           short-description: ${{ github.event.repository.description }}
+          readme-filepath: ./docker/README.md
