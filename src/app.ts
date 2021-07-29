@@ -231,7 +231,6 @@ export default class App {
 
                 group.group_members = ips;
                 await group.save();
-                debug(await this.getBlockGroup());
                 resolve();
             } catch (e) {
                 reject(e);
