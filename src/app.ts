@@ -1,5 +1,5 @@
 import Controller, { FWGroup, FWRule, Site } from 'unifi-client';
-import express from 'express';
+import express, { Express } from 'express';
 import * as crypto from 'crypto';
 import createDebug from 'debug';
 import { TasksBuffer } from './TasksBuffer';
@@ -26,6 +26,7 @@ export default class App {
     private readonly controllerUrl: string;
     private controller: Controller;
     private tasksBuffer: TasksBuffer<{ taskMethod: EMethods; currentIps: Array<string> }>;
+    private server: Express;
 
     constructor() {
         debug('App.construct()');
@@ -47,7 +48,7 @@ export default class App {
 
         this.addCheckSum = process.env.ADD_CHECKSUM;
         this.rmCheckSum = process.env.RM_CHECKSUM || this.addCheckSum;
-        this.port = Number(process.env.PORT) || 3000;
+        this.port = Number(process.env.PORT) ?? 3000;
     }
 
     private sanitizeIp(ip: string): string {
@@ -79,8 +80,8 @@ export default class App {
         this.tasksBuffer = new TasksBuffer((tasks) => this.handleTasks(tasks));
 
         //start webserver
-        const app = express();
-        app.post('/', async (req, res) => {
+        this.server = express();
+        this.server.post('/', async (req, res) => {
             try {
                 const { token: pToken, ips: pIps } = req.query;
                 const token = (Array.isArray(pToken) ? pToken.shift() : pToken).toString();
@@ -104,7 +105,7 @@ export default class App {
             }
         });
 
-        app.delete('/', async (req, res) => {
+        this.server.delete('/', async (req, res) => {
             try {
                 const { token: pToken, ips: pIps } = req.query;
                 debug('ask to unban ips');
@@ -129,7 +130,7 @@ export default class App {
             }
         });
 
-        app.listen(this.port, () => {
+        this.server.listen(this.port, () => {
             console.log(`Listening at http://localhost:${this.port}`);
         });
     }
