@@ -87,6 +87,9 @@ describe('server', () => {
         app = new App();
         await app.start();
     });
+    afterEach(() => {
+        return app.kill();
+    });
     describe('add an ip', () => {
         it('should add an ip to ban list', async () => {
             const res = await request(app.server).post(`?token=${ADD_CHECKSUM}&ips=${ipBans[0]}`).then();

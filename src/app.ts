@@ -3,6 +3,7 @@ import express, { Express } from 'express';
 import * as crypto from 'crypto';
 import createDebug from 'debug';
 import { TasksBuffer } from './TasksBuffer';
+import * as http from 'http';
 
 const enum EMethods {
     ADD,
@@ -27,6 +28,7 @@ export default class App {
     private controller: Controller;
     private tasksBuffer: TasksBuffer<{ taskMethod: EMethods; currentIps: Array<string> }>;
     private server: Express;
+    private httpServer: http.Server;
 
     constructor() {
         debug('App.construct()');
@@ -130,8 +132,26 @@ export default class App {
             }
         });
 
-        this.server.listen(this.port, () => {
+        this.httpServer = this.server.listen(this.port, () => {
             console.log(`Listening at http://localhost:${this.port}`);
+        });
+    }
+
+    public async kill(): Promise<void> {
+        return new Promise((resolve, reject): void => {
+            this.server.removeAllListeners();
+            this.server = null;
+            if (this.httpServer) {
+                this.httpServer.close((err): void => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+            } else {
+                resolve();
+            }
         });
     }
 
