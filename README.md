@@ -54,6 +54,8 @@ version: '3.7'
 services:
   unifi-blocker:
     image: thib3113/unifi-blockips-srv:latest
+    ports:
+      - "3000:3000"
     environment:
       PORT: 3000
       UNIFI_CONTROLLER_URL: http://unifi
@@ -73,6 +75,8 @@ version: '3.7'
 services:
   unifi-blocker:
     image: thib3113/unifi-blockips-srv:latest
+    ports:
+      - "3000:3000"
     secrets:
       - source: UNIFI_BLOCKER_ENV
         target: /app/.env

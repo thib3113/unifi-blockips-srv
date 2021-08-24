@@ -1,0 +1,17 @@
+{
+  "enabled": false,
+  "extends": [
+    "config:base",
+    ":separateMajorReleases",
+    ":combinePatchMinorReleases",
+    ":prImmediately",
+    ":updateNotScheduled",
+    ":automergeDisabled",
+    ":ignoreModulesAndTests",
+    ":pinDependencies",
+    ":pinDevDependencies",
+    "group:monorepos",
+    "group:recommended",
+    "workarounds:all"
+  ]
+}
