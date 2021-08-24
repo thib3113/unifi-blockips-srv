@@ -237,13 +237,18 @@ export default class App {
             try {
                 debug('addTask : execute %d tasks', tasks.length);
 
-                let group = await this.getBlockGroup();
+                const group = await this.getBlockGroup();
 
                 //first flat tasks
-                const flatTasks: Array<{ ip: string; method: EMethods }> = [].concat.apply(
-                    [],
-                    tasks.map((task) => task.currentIps.map((ip) => ({ ip, method: task.taskMethod })))
-                );
+                const flatTasks: Array<{ ip: string; method: EMethods }> = [];
+                tasks.forEach((task) => {
+                    task.currentIps.forEach((ip) => {
+                        flatTasks.push({
+                            ip,
+                            method: task.taskMethod
+                        });
+                    });
+                });
 
                 let ips = group.group_members;
                 flatTasks.forEach(({ method, ip }) => {

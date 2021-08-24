@@ -6,7 +6,8 @@
     "start": "node -r source-map-support/register build/index.js",
     "build": "tsc",
     "test": "jest",
-    "ci:eslint": "eslint -f json -o ./coverage/eslint-report.json --ext .ts \"src/**\"",
+    "lint": "eslint -f unix \"src/**/*.{ts,tsx}\"",
+    "ci:eslint": "eslint -f json -o ./coverage/eslint-report.json -f unix \"src/**/*.{ts,tsx}\"",
     "test:CI:coverage": "jest --ci --coverage",
     "watch": "jest --env=jsdom --watch"
   },
