@@ -90,6 +90,7 @@ services:
 
 ```shell
 git clone git@github.com:thib3113/unifi-blockips-srv.git
+npm install
 npm run build
 pm2 start
 ```
