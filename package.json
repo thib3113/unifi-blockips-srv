@@ -21,7 +21,7 @@
     "express": "4.17.1",
     "source-map-support": "0.5.20",
     "ts-node": "10.4.0",
-    "typescript": "4.4.4",
+    "typescript": "4.5.2",
     "unifi-client": "0.9.0"
   },
   "devDependencies": {
