@@ -15,7 +15,7 @@
   "dependencies": {
     "@types/node": "16.11.19",
     "app-root-path": "3.0.0",
-    "axios": "0.24.0",
+    "axios": "0.25.0",
     "debug": "4.3.3",
     "dotenv": "14.2.0",
     "express": "4.17.2",
