@@ -13,7 +13,7 @@
   },
   "license": "UNLICENSED",
   "dependencies": {
-    "@types/node": "16.11.19",
+    "@types/node": "16.11.21",
     "app-root-path": "3.0.0",
     "axios": "0.25.0",
     "debug": "4.3.3",
