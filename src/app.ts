@@ -50,7 +50,7 @@ export default class App {
 
         this.addCheckSum = process.env.ADD_CHECKSUM;
         this.rmCheckSum = process.env.RM_CHECKSUM || this.addCheckSum;
-        this.port = Number(process.env.PORT) ?? 3000;
+        this.port = Number(process.env.PORT) || 3000;
     }
 
     private sanitizeIp(ip: string): string {
@@ -93,7 +93,7 @@ export default class App {
                     return res.status(401).send();
                 }
 
-                const ips = (Array.isArray(pIps) ? pIps : [pIps]).map((i) => i.toString());
+                const ips = (Array.isArray(pIps) ? pIps : [pIps]).filter((i) => !!i).map((i) => i.toString());
                 debug('ask to ban ips %s', JSON.stringify(ips));
                 this.tasksBuffer.addTask({
                     taskMethod: EMethods.ADD,
