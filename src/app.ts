@@ -5,6 +5,7 @@ import createDebug from 'debug';
 import { TasksBuffer } from './TasksBuffer';
 import * as http from 'http';
 import { Address4, Address6 } from 'ip-address';
+import { AddressInfo } from 'net';
 
 const enum EMethods {
     ADD,
@@ -58,7 +59,8 @@ export default class App {
 
         this.addCheckSum = process.env.ADD_CHECKSUM;
         this.rmCheckSum = process.env.RM_CHECKSUM || this.addCheckSum;
-        this.port = Number(process.env.PORT) || 3000;
+        const port = Number(process.env.PORT);
+        this.port = port || port === 0 ? port : 3000;
     }
 
     private getIpObject(ip: string): Address4 | Address6 {
@@ -150,7 +152,8 @@ export default class App {
         });
 
         this.httpServer = this.server.listen(this.port, () => {
-            console.log(`Listening at http://localhost:${this.port}`);
+            const address = this.httpServer.address() as AddressInfo;
+            console.log(`Listening at http://localhost:${address.port}`);
         });
     }
 
