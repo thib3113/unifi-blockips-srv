@@ -5,6 +5,7 @@ import createDebug from 'debug';
 import { TasksBuffer } from './TasksBuffer';
 import * as http from 'http';
 import { Address4, Address6 } from 'ip-address';
+import { AddressInfo } from 'net';
 
 const enum EMethods {
     ADD,
@@ -18,9 +19,12 @@ export default class App {
     private readonly unifiSiteName: string;
     private readonly unifiFWRuleName: string;
     private readonly unifiFWGroupName: string;
+    private readonly unifiFWRuleNameV6: string;
+    private readonly unifiFWGroupNameV6: string;
 
     private currentSite: Site;
     private currentFWRule: FWRule;
+    private currentFWRuleV6: FWRule;
     private readonly addCheckSum: string;
     private readonly rmCheckSum: string;
     private readonly port: number;
@@ -46,12 +50,17 @@ export default class App {
         }
         this.unifiPassword = process.env.UNIFI_PASSWORD;
         this.unifiSiteName = process.env.UNIFI_SITE_NAME;
-        this.unifiFWRuleName = process.env.UNIFI_FW_RULE_NAME;
-        this.unifiFWGroupName = process.env.UNIFI_GROUP_NAME;
+
+        //get FWRule / FWGroups
+        this.unifiFWRuleName = process.env.UNIFI_FW_RULE_NAME || 'Banned IPs';
+        this.unifiFWGroupName = process.env.UNIFI_GROUP_NAME || 'IP_BANNED';
+        this.unifiFWRuleNameV6 = process.env.UNIFI_FW_RULE_NAME_V6 || 'Banned IPV6s';
+        this.unifiFWGroupNameV6 = process.env.UNIFI_GROUP_NAME_V6 || 'IP_BANNED_V6';
 
         this.addCheckSum = process.env.ADD_CHECKSUM;
         this.rmCheckSum = process.env.RM_CHECKSUM || this.addCheckSum;
-        this.port = Number(process.env.PORT) || 3000;
+        const port = Number(process.env.PORT);
+        this.port = port || port === 0 ? port : 3000;
     }
 
     private getIpObject(ip: string): Address4 | Address6 {
@@ -88,7 +97,7 @@ export default class App {
         await this.selectFWRule();
 
         //try to get block group
-        await this.getBlockGroup();
+        await this.getFWGroups();
 
         this.tasksBuffer = new TasksBuffer((tasks) => this.handleTasks(tasks));
 
@@ -135,7 +144,6 @@ export default class App {
                     taskMethod: EMethods.DEL,
                     currentIps: ips.map((i) => this.getIpObject(i))
                 });
-                // await this.removeIps(ips);
                 res.status(200).send();
             } catch (e) {
                 console.error(e);
@@ -144,7 +152,8 @@ export default class App {
         });
 
         this.httpServer = this.server.listen(this.port, () => {
-            console.log(`Listening at http://localhost:${this.port}`);
+            const address = this.httpServer.address() as AddressInfo;
+            console.log(`Listening at http://localhost:${address.port}`);
         });
     }
 
@@ -173,21 +182,27 @@ export default class App {
             .digest('hex');
     }
 
-    private async getBlockGroup(): Promise<FWGroup> {
-        debug('App.getBlockGroup()');
+    private async getFWGroups(): Promise<{ ipv4: FWGroup; ipv6?: FWGroup }> {
+        debug('App.getFWGroups()');
         const groups = await this.currentSite.firewall.getGroups();
 
-        debug('App.getBlockGroup() : %d groups loaded', groups.length);
+        debug('App.getFWGroups() : %d groups loaded', groups.length);
 
         const currentGroup = groups.find((r) => r && r.name === this.unifiFWGroupName);
         if (!currentGroup) {
             throw new Error(`fail to get group "${this.unifiFWGroupName}"`);
         }
 
+        const currentGroupV6 = groups.find((r) => r && r.name === this.unifiFWGroupNameV6);
+        if (!currentGroupV6) {
+            throw new Error(`fail to get group "${this.unifiFWGroupNameV6}"`);
+        }
+
         //just to secure
         currentGroup.group_members = currentGroup.group_members || [];
+        currentGroupV6.group_members = currentGroupV6.group_members || [];
 
-        return currentGroup;
+        return { ipv4: currentGroup, ipv6: currentGroupV6 };
     }
 
     private _addIps(ip: string, ips: Array<string>): Array<string> {
@@ -225,8 +240,8 @@ export default class App {
     }
 
     private async selectFWRule(): Promise<void> {
-        if (!this.unifiFWRuleName) {
-            throw new Error('env.UNIFI_FW_RULE_NAME is mandatory');
+        if (!this.unifiFWRuleName || !this.unifiFWRuleNameV6) {
+            throw new Error('env.UNIFI_FW_RULE_NAME and env.UNIFI_FW_RULE_NAME_V6 are mandatory');
         }
         debug('App.selectFWRule() : load FW rules');
         const rules = await this.currentSite.firewall.getRules();
@@ -236,6 +251,11 @@ export default class App {
         this.currentFWRule = rules.find((r) => r.name === this.unifiFWRuleName);
         if (!this.currentFWRule) {
             throw new Error(`fail to get rule "${this.unifiFWRuleName}"`);
+        }
+
+        this.currentFWRuleV6 = rules.find((r) => r.name === this.unifiFWRuleNameV6);
+        if (!this.currentFWRuleV6) {
+            throw new Error(`fail to get rule "${this.unifiFWRuleNameV6}"`);
         }
     }
 
@@ -248,43 +268,40 @@ export default class App {
             try {
                 debug('addTask : execute %d tasks', tasks.length);
 
-                const group = await this.getBlockGroup();
+                const groups = await this.getFWGroups();
 
                 //first flat tasks
-                const flatTasks: Array<{ ip: string; method: EMethods }> = [];
+                const flatTasks: Array<{ ip: Address4 | Address6; method: EMethods }> = [];
                 tasks.forEach((task) => {
-                    task.currentIps
-                        .filter((ip) => {
-                            if (ip instanceof Address4) {
-                                return true;
-                            } else {
-                                debug('ip %s is not supported for the moment', ip.address);
-                                return false;
-                            }
-                        })
-                        //convert to string + remove useless subnet /32 ( /32 say only one ip )
-                        .map((ip) => {
-                            if (ip.subnetMask === 32) {
-                                return ip.addressMinusSuffix;
-                            } else {
-                                return ip.address;
-                            }
-                        })
-                        .forEach((ip) => {
-                            flatTasks.push({
-                                ip,
-                                method: task.taskMethod
-                            });
+                    task.currentIps.forEach((ip) => {
+                        flatTasks.push({
+                            ip,
+                            method: task.taskMethod
                         });
+                    });
                 });
 
-                let ips = group.group_members;
+                let IPv4s = groups.ipv4.group_members;
+                let IPv6s = groups.ipv6.group_members;
                 flatTasks.forEach(({ method, ip }) => {
-                    ips = method === EMethods.ADD ? this._addIps(ip, ips) : this._removeIps(ip, ips);
+                    let ipStr;
+                    //convert to string + remove useless subnet /32 ( /32 say only one ip )
+                    if (ip.subnetMask === 32) {
+                        ipStr = ip.addressMinusSuffix;
+                    } else {
+                        ipStr = ip.address;
+                    }
+                    if (ip instanceof Address4) {
+                        IPv4s = method === EMethods.ADD ? this._addIps(ipStr, IPv4s) : this._removeIps(ipStr, IPv4s);
+                    } else {
+                        IPv6s = method === EMethods.ADD ? this._addIps(ipStr, IPv6s) : this._removeIps(ipStr, IPv6s);
+                    }
                 });
 
-                group.group_members = ips;
-                await group.save();
+                groups.ipv4.group_members = IPv4s;
+                groups.ipv6.group_members = IPv6s;
+                return Promise.all([groups.ipv4.save(), groups.ipv6.save()]);
+
                 resolve();
             } catch (e) {
                 reject(e);
