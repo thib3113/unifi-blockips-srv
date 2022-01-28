@@ -20,7 +20,9 @@ They work like this :
 | UNIFI_PASSWORD | password of the user | yes
 | UNIFI_SITE_NAME | name of the "site" | no (default to first one)
 | UNIFI_FW_RULE_NAME | name of the FW Rule | yes
+| UNIFI_FW_RULE_NAME_V6 | name of the FW Rule for ipv6 | yes
 | UNIFI_GROUP_NAME | group where the ips will be managed | yes
+| UNIFI_GROUP_NAME_V6 | group where the ips will be managed for ipv6 | yes
 | ADD_CHECKSUM | sha256 of the token to add ip | no ( but recommended )
 | RM_CHECKSUM | sha256 of the token to add ip | no (default to ADD_CHECKSUM, recommended)
 | port | the port where the app will listen | no (default to 3000)
