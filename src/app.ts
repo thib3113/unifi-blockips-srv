@@ -182,7 +182,7 @@ export default class App {
             .digest('hex');
     }
 
-    private async getFWGroups(): Promise<{ ipv4: FWGroup; ipv6?: FWGroup }> {
+    private async getFWGroups(): Promise<{ ipv4: FWGroup; ipv6: FWGroup }> {
         debug('App.getFWGroups()');
         const groups = await this.currentSite.firewall.getGroups();
 
@@ -300,8 +300,17 @@ export default class App {
 
                 groups.ipv4.group_members = IPv4s;
                 groups.ipv6.group_members = IPv6s;
-                return Promise.all([groups.ipv4.save(), groups.ipv6.save()]);
 
+                debug(
+                    '%d members in %s, %d members in %s',
+                    groups.ipv4.group_members.length,
+                    groups.ipv4.name,
+                    groups.ipv6.group_members.length,
+                    groups.ipv6.name
+                );
+
+                await Promise.all([groups.ipv4.save(), groups.ipv6.save()]);
+                debug('end tasks');
                 resolve();
             } catch (e) {
                 reject(e);
