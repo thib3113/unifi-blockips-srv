@@ -1,7 +1,7 @@
 FROM node:lts-alpine
 LABEL maintainer="thibaut severac <thib3113@gmail.com>"
 
-RUN apk add --no-cache yarn
+RUN apk add --no-cache yarn python3 py3-pip make
 
 WORKDIR /app
 
@@ -22,6 +22,7 @@ RUN cd /tmp/src && \
 RUN rm -Rf /tmp/src
 RUN yarn install --prod
 
+RUN apk del python3 py3-pip make
 
 #HEALTHCHECK --interval=1m --timeout=3s \
 #  CMD yarn run healthCheck || exit 1
