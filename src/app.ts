@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import createDebug from 'debug';
 import { TasksBuffer } from './TasksBuffer';
 import * as http from 'http';
+import { Address4, Address6 } from 'ip-address';
 
 const enum EMethods {
     ADD,
@@ -26,7 +27,7 @@ export default class App {
 
     private readonly controllerUrl: string;
     private controller: Controller;
-    private tasksBuffer: TasksBuffer<{ taskMethod: EMethods; currentIps: Array<string> }>;
+    private tasksBuffer: TasksBuffer<{ taskMethod: EMethods; currentIps: Array<Address4 | Address6> }>;
     private server: Express;
     private httpServer: http.Server;
 
@@ -53,9 +54,19 @@ export default class App {
         this.port = Number(process.env.PORT) || 3000;
     }
 
-    private sanitizeIp(ip: string): string {
-        // ip/32 === ip
-        return ip.replace('/32', '');
+    private getIpObject(ip: string): Address4 | Address6 {
+        try {
+            //check if it's a valid IPv4
+            return new Address4(ip);
+        } catch (e) {
+            //e is not instance of AddressError
+            if ((e as { name: string }).name === 'AddressError') {
+                //maybe it's a valid IPv6
+                return new Address6(ip);
+            } else {
+                throw e;
+            }
+        }
     }
 
     private taskPromise: Promise<void> = null;
@@ -87,7 +98,7 @@ export default class App {
             try {
                 const { token: pToken, ips: pIps } = req.query;
                 const token = (Array.isArray(pToken) ? pToken.shift() : pToken).toString();
-                debug('ask to ban ips');
+                // debug('ask to ban ips');
                 if (App.getCheckSum(token) != this.addCheckSum) {
                     debug('token to add ban invalid');
                     return res.status(401).send();
@@ -97,7 +108,7 @@ export default class App {
                 debug('ask to ban ips %s', JSON.stringify(ips));
                 this.tasksBuffer.addTask({
                     taskMethod: EMethods.ADD,
-                    currentIps: ips.map((i) => this.sanitizeIp(i))
+                    currentIps: ips.map((i) => this.getIpObject(i))
                 });
 
                 res.status(200).send();
@@ -110,7 +121,7 @@ export default class App {
         this.server.delete('/', async (req, res) => {
             try {
                 const { token: pToken, ips: pIps } = req.query;
-                debug('ask to unban ips');
+                // debug('ask to unban ips');
                 const token = (Array.isArray(pToken) ? pToken.shift() : pToken).toString();
                 if (App.getCheckSum(token) != this.rmCheckSum) {
                     debug('token to remove ban invalid');
@@ -122,7 +133,7 @@ export default class App {
 
                 this.tasksBuffer.addTask({
                     taskMethod: EMethods.DEL,
-                    currentIps: ips.map((i) => this.sanitizeIp(i))
+                    currentIps: ips.map((i) => this.getIpObject(i))
                 });
                 // await this.removeIps(ips);
                 res.status(200).send();
@@ -228,7 +239,7 @@ export default class App {
         }
     }
 
-    private async handleTasks(tasks: Array<{ taskMethod: EMethods; currentIps: Array<string> }>): Promise<void> {
+    private async handleTasks(tasks: Array<{ taskMethod: EMethods; currentIps: Array<Address4 | Address6> }>): Promise<void> {
         if (this.taskPromise) {
             await this.taskPromise;
         }
@@ -242,12 +253,29 @@ export default class App {
                 //first flat tasks
                 const flatTasks: Array<{ ip: string; method: EMethods }> = [];
                 tasks.forEach((task) => {
-                    task.currentIps.forEach((ip) => {
-                        flatTasks.push({
-                            ip,
-                            method: task.taskMethod
+                    task.currentIps
+                        .filter((ip) => {
+                            if (ip instanceof Address4) {
+                                return true;
+                            } else {
+                                debug('ip %s is not supported for the moment', ip.address);
+                                return false;
+                            }
+                        })
+                        //convert to string + remove useless subnet /32 ( /32 say only one ip )
+                        .map((ip) => {
+                            if (ip.subnetMask === 32) {
+                                return ip.addressMinusSuffix;
+                            } else {
+                                return ip.address;
+                            }
+                        })
+                        .forEach((ip) => {
+                            flatTasks.push({
+                                ip,
+                                method: task.taskMethod
+                            });
                         });
-                    });
                 });
 
                 let ips = group.group_members;
