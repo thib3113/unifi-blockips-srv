@@ -22,7 +22,7 @@ RUN cd /tmp/src && \
 RUN rm -Rf /tmp/src
 RUN yarn install --prod
 
-RUN apk delete python3 py3-pip
+RUN apk del python3 py3-pip
 
 #HEALTHCHECK --interval=1m --timeout=3s \
 #  CMD yarn run healthCheck || exit 1
