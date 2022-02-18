@@ -20,7 +20,7 @@
     "ip-address": "8.1.0",
     "source-map-support": "0.5.21",
     "ts-node": "10.5.0",
-    "unifi-client": "0.9.2"
+    "unifi-client": "0.9.3"
   },
   "devDependencies": {
     "@types/debug": "4.1.7",
