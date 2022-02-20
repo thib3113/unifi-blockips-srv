@@ -16,7 +16,7 @@
     "app-root-path": "3.0.0",
     "debug": "4.3.3",
     "dotenv": "16.0.0",
-    "express": "4.17.2",
+    "express": "4.17.3",
     "ip-address": "8.1.0",
     "source-map-support": "0.5.21",
     "ts-node": "10.5.0",
