@@ -15,7 +15,7 @@
   "dependencies": {
     "app-root-path": "3.0.0",
     "debug": "4.3.4",
-    "dotenv": "16.0.0",
+    "dotenv": "16.0.1",
     "express": "4.18.1",
     "ip-address": "8.1.0",
     "source-map-support": "0.5.21",
