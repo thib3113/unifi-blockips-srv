@@ -1,15 +1,6 @@
+//import global first, to set env
+import './global';
 import App from './app';
-import dotEnv from 'dotenv';
-import AppRoot from 'app-root-path';
-import path from 'path';
-import fs from 'fs';
-
-//allow /.env
-const envPath = fs.existsSync(path.join('/.env')) ? path.join('/.env') : path.join(AppRoot.path, '.env');
-
-dotEnv.config({
-    path: envPath
-});
 
 try {
     App.Initializer()

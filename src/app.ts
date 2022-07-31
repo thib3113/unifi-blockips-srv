@@ -1,11 +1,11 @@
-import Controller, { FWGroup, FWRule, Site } from 'unifi-client';
+import Controller, { FWGroup, Site } from 'unifi-client';
 import express, { Express } from 'express';
 import * as crypto from 'crypto';
-import createDebug from 'debug';
 import { TasksBuffer } from './TasksBuffer';
 import * as http from 'http';
 import { Address4, Address6 } from 'ip-address';
 import { AddressInfo } from 'net';
+import logger from './logger';
 
 const MAX_IPS_PER_GROUP = 10000;
 
@@ -14,7 +14,6 @@ const enum EMethods {
     DEL
 }
 
-const debug = createDebug('unifi-blockips-srv');
 export default class App {
     private readonly unifiFWGroupNames: Array<string>;
     private readonly unifiFWGroupNamesV6: Array<string>;
@@ -28,7 +27,7 @@ export default class App {
     private httpServer?: http.Server;
 
     static async Initializer(): Promise<App> {
-        debug('App.Initializer()');
+        logger.debug('App.Initializer()');
 
         if (!process.env.UNIFI_CONTROLLER_URL) {
             throw new Error('please fill process.env.UNIFI_CONTROLLER_URL');
@@ -59,7 +58,7 @@ export default class App {
     }
 
     constructor(readonly currentSite: Site) {
-        debug('App.construct()');
+        logger.debug('App.construct()');
 
         //get FWRule / FWGroups
         this.unifiFWGroupNames = (process.env.UNIFI_GROUP_NAME || 'IP_BANNED').replace(/\s+/g, '').split(',');
@@ -92,7 +91,7 @@ export default class App {
     private taskPromise?: Promise<void>;
 
     public async start(): Promise<void> {
-        debug('App.start()');
+        logger.debug('App.start()');
 
         //try to get block group
         const { ipv4, ipv6 } = await this.getFWGroups();
@@ -104,9 +103,9 @@ export default class App {
             try {
                 const { token: pToken, ips: pIps } = req.query;
                 const token = ((Array.isArray(pToken) ? pToken.shift() : pToken) || '').toString();
-                // debug('ask to ban ips');
+                // logger.debug('ask to ban ips');
                 if (App.getCheckSum(token) != this.addCheckSum) {
-                    debug('token to add ban invalid');
+                    logger.debug('token to add ban invalid');
                     return res.status(401).send();
                 }
 
@@ -114,7 +113,7 @@ export default class App {
                     .filter((i) => !!i)
                     .map((i) => (i || '').toString())
                     .filter((v) => !!v);
-                debug('ask to ban ips %s', JSON.stringify(ips));
+                logger.debug('ask to ban ips %s', JSON.stringify(ips));
                 this.tasksBuffer?.addTask({
                     taskMethod: EMethods.ADD,
                     currentIps: ips.map((i) => this.getIpObject(i))
@@ -130,15 +129,15 @@ export default class App {
         this.server.delete('/', async (req, res) => {
             try {
                 const { token: pToken, ips: pIps } = req.query;
-                // debug('ask to unban ips');
+                // logger.debug('ask to unban ips');
                 const token = ((Array.isArray(pToken) ? pToken.shift() : pToken) || '').toString();
                 if (App.getCheckSum(token) != this.rmCheckSum) {
-                    debug('token to remove ban invalid');
+                    logger.debug('token to remove ban invalid');
                     return res.status(401).send();
                 }
 
                 const ips = (Array.isArray(pIps) ? pIps : [pIps]).map((i) => (i || '').toString()).filter((v) => !!v);
-                debug('ask to unban ips %s', JSON.stringify(ips));
+                logger.debug('ask to unban ips %s', JSON.stringify(ips));
 
                 this.tasksBuffer?.addTask({
                     taskMethod: EMethods.DEL,
@@ -153,7 +152,7 @@ export default class App {
 
         this.httpServer = this.server.listen(this.port, () => {
             const address = this.httpServer?.address() as AddressInfo;
-            console.log(`Listening at http://localhost:${address.port}`);
+            logger.info(`Listening at http://localhost:${address.port}`);
         });
     }
 
@@ -183,10 +182,10 @@ export default class App {
     }
 
     private async getFWGroups(): Promise<{ ipv4: Array<FWGroup>; ipv6: Array<FWGroup> }> {
-        debug('App.getFWGroups()');
+        logger.debug('App.getFWGroups()');
         const groups = await this.currentSite?.firewall.getGroups();
 
-        debug('App.getFWGroups() : %d groups loaded', groups?.length);
+        logger.debug('App.getFWGroups() : %d groups loaded', groups?.length);
 
         const currentGroups = groups
             .filter((r) => r && this.unifiFWGroupNames.includes(r.name))
@@ -229,10 +228,10 @@ export default class App {
 
     private static async getSite(controller: Controller, siteName?: string): Promise<Site> {
         //Get sites
-        debug('App.selectSite() : load sites');
+        logger.debug('App.selectSite() : load sites');
         const sites = await controller.getSites();
 
-        debug('App.selectSite() : %d sites loaded', sites.length);
+        logger.debug('App.selectSite() : %d sites loaded', sites.length);
 
         let site: Site | undefined;
         //search site in settings
@@ -252,7 +251,7 @@ export default class App {
             throw new Error('fail to get site for an unknown reason');
         }
 
-        debug('App.selectSite() : current site %s', site?.name);
+        logger.debug('App.selectSite() : current site %s', site?.name);
         return site;
     }
 
@@ -263,7 +262,7 @@ export default class App {
 
         this.taskPromise = new Promise<void>(async (resolve, reject) => {
             try {
-                debug('addTask : execute %d tasks', tasks.length);
+                logger.debug('addTask : execute %d tasks', tasks.length);
 
                 const groups = await this.getFWGroups();
 
@@ -291,7 +290,7 @@ export default class App {
 
                     if (!ipStr) {
                         //never saw this case
-                        debug(`Error : fail to get ip from ${ip}`);
+                        logger.error(`Error : fail to get ip from ${ip}`);
                         return;
                     }
 
@@ -311,7 +310,7 @@ export default class App {
 
                 const ipv4sMissingGroup = IPv4s.length - groups.ipv4.length * MAX_IPS_PER_GROUP - 1;
                 if (ipv4sMissingGroup > 0) {
-                    debug(`WARNING : ${ipv4sMissingGroup} IPv4 can't be blocked, because no enough groups`);
+                    logger.warn(`${ipv4sMissingGroup} IPv4 can't be blocked, because no enough groups`);
                 }
 
                 //apply first IP banned to all groups, because group need an entry
@@ -322,15 +321,15 @@ export default class App {
                 });
                 const ipv6sMissingGroup = IPv6s.length - groups.ipv6.length * MAX_IPS_PER_GROUP - 1;
                 if (ipv6sMissingGroup > 0) {
-                    debug(`WARNING : ${ipv6sMissingGroup} IPv6 can't be blocked, because no enough groups`);
+                    logger.warn(`${ipv6sMissingGroup} IPv6 can't be blocked, because no enough groups`);
                 }
 
                 [...groups.ipv4, ...groups.ipv6].forEach((g) => {
-                    debug('%d members in %s', g.group_members.length, g.name);
+                    logger.debug('%d members in %s', g.group_members.length, g.name);
                 });
 
                 await Promise.all([...groups.ipv4.map((g) => g.save()), ...groups.ipv6.map((g) => g.save())]);
-                debug('end tasks');
+                logger.debug('end tasks');
                 resolve();
             } catch (e) {
                 reject(e);
@@ -339,10 +338,10 @@ export default class App {
     }
 
     private async checkFWGroupsRules(groups: Array<FWGroup>) {
-        debug('App.selectFWRule() : load FW rules');
+        logger.debug('App.selectFWRule() : load FW rules');
         const rules = await this.currentSite.firewall.getRules();
 
-        debug('App.selectFWRule() : %d rules loaded', rules.length);
+        logger.debug('App.selectFWRule() : %d rules loaded', rules.length);
 
         const unusedGroups = groups.filter(
             (group) => !rules.some((rule) => rule.src_firewallgroup_ids.some((srcGroup) => srcGroup === group._id))

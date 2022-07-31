@@ -11,13 +11,12 @@
 | UNIFI_USERNAME | username of a user ( rights levels not tested ) | yes
 | UNIFI_PASSWORD | password of the user | yes
 | UNIFI_SITE_NAME | name of the "site" | no (default to first one)
-| UNIFI_FW_RULE_NAME | name of the FW Rule | yes
-| UNIFI_FW_RULE_NAME_V6 | name of the FW Rule for ipv6 | yes
-| UNIFI_GROUP_NAME | group where the ips will be managed | yes
-| UNIFI_GROUP_NAME_V6 | group where the ips will be managed for ipv6 | yes
+| UNIFI_GROUP_NAME | groups (comma separated) where the ips will be managed | yes
+| UNIFI_GROUP_NAME_V6 | groups (comma separated) where the ips will be managed for ipv6 | yes
 | ADD_CHECKSUM | sha256 of the token to add ip | no ( but recommended )
 | RM_CHECKSUM | sha256 of the token to add ip | no (default to ADD_CHECKSUM, recommended)
 | port | the port where the app will listen | no (default to 3000)
+| LOG_LEVEL | the loglevel, need to be one string of [winston levels](https://github.com/winstonjs/winston#logging-levels) | no (default to info)
 
 
 # How to use
@@ -41,6 +40,9 @@ In this script,
 and
 `UNIFI_GROUP_NAME` will be `Block_Group`
 
+## Limitations
+Unifi seems to bug with 10 000 IPs per groups . So, to block more than 9 999 IPs, you will need to pass multiples groups
+
 # How to run the app
 
 ## Docker
@@ -62,8 +64,7 @@ services:
       PORT: 3000
       UNIFI_CONTROLLER_URL: http://unifi
       UNIFI_SITE_NAME: my_site
-      UNIFI_FW_RULE_NAME: my_block_rule
-      UNIFI_GROUP_NAME: my_group
+      UNIFI_GROUP_NAME: my_group, my_group2, my_group3
       ADD_CHECKSUM: 2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae
       RM_CHECKSUM: fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9
       # please never set the username / password like that, bind a file to /.env with the variables
