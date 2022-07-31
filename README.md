@@ -6,14 +6,14 @@
 
 | key | description | mandatory |
 |--|--|--
-| UNIFI_CONTROLLER_IP | the ip of the controller ( or fqdn ) | yes
+| UNIFI_CONTROLLER_IP | the ip of the controller (or fqdn) | yes
 | UNIFI_CONTROLLER_PORT | port of the controller sometimes 8443 or 443| yes
-| UNIFI_USERNAME | username of a user ( rights levels not tested ) | yes
+| UNIFI_USERNAME | username of a user (rights levels not tested) | yes
 | UNIFI_PASSWORD | password of the user | yes
 | UNIFI_SITE_NAME | name of the "site" | no (default to first one)
 | UNIFI_GROUP_NAME | groups (comma separated) where the ips will be managed | yes
-| UNIFI_GROUP_NAME_V6 | groups (comma separated) where the ips will be managed for ipv6 | yes
-| ADD_CHECKSUM | sha256 of the token to add ip | no ( but recommended )
+| UNIFI_GROUP_NAME_V6 | groups (comma separated) where the ips will be managed for ipv6 | no (deprecated, add in the UNIFI_GROUP_NAME)
+| ADD_CHECKSUM | sha256 of the token to add ip | no (but recommended)
 | RM_CHECKSUM | sha256 of the token to add ip | no (default to ADD_CHECKSUM, recommended)
 | port | the port where the app will listen | no (default to 3000)
 | LOG_LEVEL | the loglevel, need to be one string of [winston levels](https://github.com/winstonjs/winston#logging-levels) | no (default to info)
@@ -32,13 +32,15 @@ token will be check again ADD_CHECKSUM or RM_CHECKSUM . You can use this site to
 To secure data in the container, you can pass ENV via `/app/.env` ( respecting .env format ) .
 
 # How to block the Ips
-You can see this : https://github.com/tusc/blockips-unifi#preparation
-You can reuse the firewall part, create the rule, create the group .
 
-In this script,
-`UNIFI_FW_RULE_NAME` will be `Scheduled Block Group`
-and
-`UNIFI_GROUP_NAME` will be `Block_Group`
+- Go in your unifi interface
+- Go to "Firewall Rules" (position can change)
+- Create some rules in "Internet" and "Internet v6"
+  - Select Reject or Drop for the action (the two options are valid, just depends on what you want to do)
+  - in Address Group, create a group (you will need to block one ip to create it)
+- repeat the operation multiple times (one rule/group can block only 9999 ips)
+
+Now, fill the env `UNIFI_GROUP_NAME` with the name of the groups you created. (comma separated)  
 
 ## Limitations
 Unifi seems to bug with 10 000 IPs per groups . So, to block more than 9 999 IPs, you will need to pass multiples groups
