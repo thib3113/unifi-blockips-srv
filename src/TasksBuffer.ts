@@ -1,7 +1,7 @@
 export class TasksBuffer<T> {
     private tasks: Array<T> = [];
-    private timeout: NodeJS.Timeout;
-    private maxTimeout: NodeJS.Timeout;
+    private timeout?: NodeJS.Timeout;
+    private maxTimeout?: NodeJS.Timeout;
     constructor(
         readonly callBackFunction: (tasks: Array<T>) => Promise<void>,
         readonly timer: number = 5000,
@@ -28,14 +28,14 @@ export class TasksBuffer<T> {
     private clearTimeout(): void {
         if (this.timeout) {
             clearTimeout(this.timeout);
-            this.timeout = null;
+            delete this.timeout;
         }
     }
 
     private clearMaxTimeout(): void {
         if (this.maxTimeout) {
             clearTimeout(this.maxTimeout);
-            this.maxTimeout = null;
+            delete this.maxTimeout;
         }
     }
 
