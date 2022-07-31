@@ -1,5 +1,5 @@
 import App from '../src/app';
-import Controller from 'unifi-client';
+import Controller, { Site } from 'unifi-client';
 import request from 'supertest';
 
 jest.mock('unifi-client');
@@ -22,7 +22,7 @@ const ipBans = ['122.228.138.165', '185.108.39.20'];
 const ipv6Bans = ['d0fb:a8d5:5803:34b0:a9e9:b77d:4e26:9f1b', 'b432:2512:5e70:1a20:a023:b514:bfb1:7355'];
 
 describe('server', () => {
-    let app;
+    let app: App;
     const getRulesMock = jest.fn().mockImplementation(() => [
         {
             _id: '60493eb9c3d8180433ef200d',
@@ -89,8 +89,15 @@ describe('server', () => {
             site_id: '6001f8a73fd98c05e9465f91'
         }
     ]);
-    const getSitesMock = jest.fn().mockImplementation(() => [
-        {
+    const loginMock = jest.fn().mockResolvedValue(true);
+    beforeEach(async () => {
+        jest.useFakeTimers();
+        (Controller as jest.Mock).mockImplementationOnce(() => ({
+            login: loginMock
+        }));
+
+        // @ts-ignore
+        const site: Site = {
             _id: '6001f8a73fd98c05e9465f91',
             anonymous_id: 'a3222f4c-3f6f-49f1-a747-ec1afe0fc773',
             name: 'default',
@@ -99,20 +106,14 @@ describe('server', () => {
             attr_no_delete: true,
             role: 'admin',
             role_hotspot: false,
+            // @ts-ignore
             firewall: {
                 getRules: getRulesMock,
                 getGroups: getGroupsMock
             }
-        }
-    ]);
-    const loginMock = jest.fn().mockResolvedValue(true);
-    beforeEach(async () => {
-        jest.useFakeTimers();
-        (Controller as jest.Mock).mockImplementationOnce(() => ({
-            getSites: getSitesMock,
-            login: loginMock
-        }));
-        app = new App();
+        };
+
+        app = new App(site);
         await app.start();
     });
     afterEach(() => {
@@ -120,21 +121,29 @@ describe('server', () => {
     });
     describe('add an ip', () => {
         it('should add an ip to ban list', async () => {
-            const res = await request(app.server).post(`?token=${ADD_CHECKSUM}&ips=${ipBans[0]}`).then();
+            // @ts-ignore
+            const { server } = app;
+            const res = await request(server).post(`?token=${ADD_CHECKSUM}&ips=${ipBans[0]}`).then();
             expect(res.status).toBe(200);
         });
         it("shouldn't add an ip to ban list if token is not good", async () => {
-            const res = await request(app.server).post(`?token=aaaa&ips=${ipBans[0]}`).then();
+            // @ts-ignore
+            const { server } = app;
+            const res = await request(server).post(`?token=aaaa&ips=${ipBans[0]}`).then();
             expect(res.status).toBe(401);
         });
     });
     describe('delete an ip', () => {
         it('should delete an ip to ban list', async () => {
-            const res = await request(app.server).delete(`?token=${RM_CHECKSUM}&ips=${ipBans[0]}`).then();
+            // @ts-ignore
+            const { server } = app;
+            const res = await request(server).delete(`?token=${RM_CHECKSUM}&ips=${ipBans[0]}`).then();
             expect(res.status).toBe(200);
         });
         it("shouldn't delete an ip to ban list if token is not good", async () => {
-            const res = await request(app.server).delete(`?token=aaaa&ips=${ipBans[0]}`).then();
+            // @ts-ignore
+            const { server } = app;
+            const res = await request(server).delete(`?token=aaaa&ips=${ipBans[0]}`).then();
             expect(res.status).toBe(401);
         });
     });
