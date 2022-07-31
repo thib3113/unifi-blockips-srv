@@ -12,7 +12,9 @@ dotEnv.config({
 });
 
 try {
-    new App().start().catch((e) => console.error(e));
+    App.Initializer()
+        .then((app) => app.start())
+        .catch((e) => console.error(e));
 } catch (e) {
     console.error(e);
     throw e;
