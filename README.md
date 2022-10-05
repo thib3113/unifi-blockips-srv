@@ -27,7 +27,7 @@ To add an IP to the blocklist :
 to delete an IP
 `DELETE /?token=tatayoyo2&ips[]=127.0.0.1`
 
-token will be check again ADD_CHECKSUM or RM_CHECKSUM . You can use this site to generate your checksum : https://emn178.github.io/online-tools/sha256.html
+token will be check against ADD_CHECKSUM or RM_CHECKSUM . You can use this site to generate your checksum : https://emn178.github.io/online-tools/sha256.html
 
 To secure data in the container, you can pass ENV via `/app/.env` ( respecting .env format ) .
 
