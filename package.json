@@ -19,7 +19,7 @@
     "ip-address": "8.1.0",
     "source-map-support": "0.5.21",
     "ts-node": "10.9.1",
-    "unifi-client": "0.9.5",
+    "unifi-client": "0.10.0",
     "winston": "^3.8.1"
   },
   "devDependencies": {
