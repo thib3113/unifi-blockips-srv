@@ -4,7 +4,8 @@ LABEL maintainer="thibaut severac <thib3113@gmail.com>"
 RUN apk upgrade && \
     apk add --no-cache python3 py3-pip make
 
-RUN npm install -g pnpm
+RUN npm install -g npm && \
+    npm install -g pnpm
 
 WORKDIR /app
 
