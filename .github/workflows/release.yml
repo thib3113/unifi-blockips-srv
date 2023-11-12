@@ -9,11 +9,7 @@ on:
 
 jobs:
   docker:
-    strategy:
-      matrix:
-        arch:  [linux/amd64, linux/arm64]
     runs-on: ubuntu-latest
-    name: docker build arch ${{ matrix.arch }}
     steps:
       - name: Docker meta
         id: meta
@@ -50,10 +46,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           file: ./docker/Dockerfile
-          platforms: ${{ matrix.arch }}
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      -
-        name: Image digest
+      - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
