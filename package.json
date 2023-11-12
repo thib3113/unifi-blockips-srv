@@ -1,6 +1,6 @@
 {
   "name": "unifi-blockips-srv",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "scripts": {
     "debug": "tsc && node -r source-map-support/register build/index.js",
     "start": "node -r source-map-support/register build/index.js",
@@ -22,7 +22,10 @@
     "unifi-client": "0.11.0",
     "winston": "^3.11.0"
   },
-  "files": ["build", "ecosystem.config.js"],
+  "files": [
+    "build",
+    "ecosystem.config.js"
+  ],
   "devDependencies": {
     "@tsconfig/node14": "14.1.0",
     "@types/express": "4.17.21",
