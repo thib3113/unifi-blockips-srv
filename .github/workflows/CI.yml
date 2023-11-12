@@ -18,21 +18,29 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: lts/*
-      - name: generate lock files
-        run: yarn
-      - uses: actions/setup-node@v3
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        id: pnpm-install
         with:
-          node-version: lts/*
-          cache: yarn
-      - name: get list
+          run_install: true
+          version: latest
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
         run: |
-          yarn list > yarn.list
-      - uses: actions/upload-artifact@v3
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
         with:
-          name: prepare
-          path: |
-            ./yarn.list
-            ./yarn.lock
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
 
   # This workflow contains a single job called "build"
   build:
@@ -54,15 +62,39 @@ jobs:
         with:
           name: prepare
           path: .
-      # try to perform a nodejs setup
-      - uses: actions/setup-node@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: yarn
-      - name: npm install, build, and test
+          node-version: lts/*
+
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          run_install: true
+          version: latest
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
         run: |
-          yarn install
-          yarn build
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: npm build, and test
+        run: |
+          pnpm run build
           echo start tests
         env:
           CI: true
@@ -71,7 +103,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
         with:
-          test-command: yarn run test:CI:coverage
+          test-command: pnpm run test:CI:coverage
           coverage-comment: false
 
       - name: replace path in coverage files
