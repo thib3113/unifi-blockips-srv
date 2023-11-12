@@ -2,7 +2,7 @@ FROM node:lts-alpine
 LABEL maintainer="thibaut severac <thib3113@gmail.com>"
 
 RUN apk upgrade && \
-    apk add --no-cache python3 py3-pip make
+    apk add --no-cache build-base python3 py3-pip make
 
 RUN npm install -g npm && \
     npm install -g pnpm
@@ -26,7 +26,7 @@ RUN cd /tmp/src && \
 RUN rm -Rf /tmp/src
 RUN pnpm install -P
 
-RUN apk del python3 py3-pip make
+RUN apk del build-base python3 py3-pip make
 
 #HEALTHCHECK --interval=1m --timeout=3s \
 #  CMD yarn run healthCheck || exit 1
