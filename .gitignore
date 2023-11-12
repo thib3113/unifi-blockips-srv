@@ -151,8 +151,5 @@ $RECYCLE.BIN/
 
 config.json
 !.gitkeep
-/package-lock.json
 
 build
-last-check.json
-yarn.lock
