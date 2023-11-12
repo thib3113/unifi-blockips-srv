@@ -23,6 +23,8 @@ FROM node:lts-alpine
 LABEL maintainer="thibaut severac <thib3113@gmail.com>"
 WORKDIR /app
 
+RUN apk add --no-cache build-base python3 py3-pip make
+
 COPY --from=builder /app .
 
 RUN npm install -g npm && \
@@ -30,7 +32,8 @@ RUN npm install -g npm && \
 RUN pnpm install -P
 
 RUN npm remove -g pnpm yarn &&\
-    npm cache clean --force
+    npm cache clean --force &&\
+    apk del build-base python3 py3-pip make
 
 COPY ./docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
