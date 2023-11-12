@@ -11,7 +11,7 @@ jobs:
   docker:
     strategy:
       matrix:
-        arch:  [linux/amd64, linux/arm64, linux/arm/v7]
+        arch:  [linux/amd64, linux/arm64]
     runs-on: ubuntu-latest
     name: docker build arch ${{ matrix.arch }}
     steps:
