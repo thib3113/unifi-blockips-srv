@@ -29,6 +29,9 @@ RUN npm install -g npm && \
     npm install -g pnpm
 RUN pnpm install -P
 
+RUN npm remove -g pnpm yarn &&\
+    npm cache clean --force
+
 COPY ./docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 RUN ln -s usr/local/bin/docker-entrypoint.sh /
