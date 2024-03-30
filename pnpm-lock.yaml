@@ -32,8 +32,8 @@ dependencies:
 
 devDependencies:
   '@tsconfig/node14':
-    specifier: 14.1.0
-    version: 14.1.0
+    specifier: 14.1.2
+    version: 14.1.2
   '@types/express':
     specifier: 4.17.21
     version: 4.17.21
@@ -819,8 +819,8 @@ packages:
   /@tsconfig/node14@1.0.3:
     resolution: {integrity: sha512-ysT8mhdixWK6Hw3i1V2AeRqZ5WfXg1G43mqoYlM2nc6388Fq5jcXyr5mRsqViLx/GJYdoL0bfXD8nmF+Zn/Iow==}
 
-  /@tsconfig/node14@14.1.0:
-    resolution: {integrity: sha512-VmsCG04YR58ciHBeJKBDNMWWfYbyP8FekWVuTlpstaUPlat1D0x/tXzkWP7yCMU0eSz9V4OZU0LBWTFJ3xZf6w==}
+  /@tsconfig/node14@14.1.2:
+    resolution: {integrity: sha512-1vncsbfCZ3TBLPxesRYz02Rn7SNJfbLoDVkcZ7F/ixOV6nwxwgdhD1mdPcc5YQ413qBJ8CvMxXMFfJ7oawjo7Q==}
     dev: true
 
   /@tsconfig/node16@1.0.4:
