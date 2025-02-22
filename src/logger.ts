@@ -1,5 +1,4 @@
 import winston from 'winston';
-// @ts-ignore
 import type { TransformableInfo } from 'logform';
 
 function logFormatter(info: TransformableInfo): string {
@@ -10,16 +9,21 @@ function logFormatter(info: TransformableInfo): string {
     }
 
     let message = info.message;
-    if (message && typeof (message as unknown) != 'string') {
-        try {
-            message = JSON.stringify(message);
-        } catch (e) {
-            message = `<unStringifiable ${typeof message}> ${message}`;
+    let strMessage = '';
+    if (message) {
+        if (typeof message === 'string') {
+            strMessage = message;
+        } else {
+            try {
+                strMessage = JSON.stringify(message);
+            } catch (e) {
+                strMessage = `<unStringifiable ${typeof message}> ${message}`;
+            }
         }
     }
 
     elements.push(info.level || 'unknown');
-    elements.push(info.stack ? info.stack : message);
+    elements.push(info.stack ? info.stack.toString() : strMessage);
     return elements.join(' ');
 }
 

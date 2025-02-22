@@ -33,7 +33,7 @@ export class IPBlocker<T extends Address4 | Address6> {
     }
 
     private getDefaultIP(): string {
-        return this.getDefaultIP();
+        return this.isIPV6Blocker() ? '2001:0db8::' : '169.254.0.0';
     }
 
     private async handleTasks(tasks: Array<ITask<T>>): Promise<void> {
