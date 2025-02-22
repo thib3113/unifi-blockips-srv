@@ -20,11 +20,11 @@
       "automerge": true
     },
     {
-      "matchPackagePatterns": ["unifi-client"],
-      "stabilityDays": 0
+      "minimumReleaseAge": null,
+      "matchPackageNames": ["/unifi-client/"]
     }
   ],
   "dependencyDashboard": true,
-  "stabilityDays": 3,
+  "minimumReleaseAge": "3 days",
   "assignees": ["thib3113"]
 }
