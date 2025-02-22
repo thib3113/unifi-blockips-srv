@@ -4,25 +4,25 @@
 
 ## ENV
 
-| key                        | description                                                                                                  | mandatory |
-|----------------------------|--------------------------------------------------------------------------------------------------------------|--
-| UNIFI_CONTROLLER_IP        | the ip of the controller (or fqdn)                                                                           | yes
-| UNIFI_CONTROLLER_PORT      | port of the controller sometimes 8443 or 443                                                                 | yes
-| UNIFI_USERNAME             | username of a user (rights levels not tested)                                                                | yes
-| UNIFI_PASSWORD             | password of the user                                                                                         | yes
-| UNIFI_SITE_NAME            | name of the "site"                                                                                           | no (default to first one)
-| UNIFI_GROUP_NAME           | groups (comma separated) where the ips will be managed                                                       | yes
-| UNIFI_GROUP_NAME_V6        | groups (comma separated) where the ips will be managed for ipv6                                              | no (deprecated, add in the UNIFI_GROUP_NAME)
-| ADD_CHECKSUM               | sha256 of the token to add ip                                                                                | no (but recommended)
-| RM_CHECKSUM                | sha256 of the token to add ip                                                                                | no (default to ADD_CHECKSUM, recommended)
-| port                       | the port where the app will listen                                                                           | no (default to 3000)
-| LOG_LEVEL                  | the loglevel, need to be one string of [winston levels](https://github.com/winstonjs/winston#logging-levels) | no (default to info)
-| CROWDSEC_URL               | the url of your crowdsec instance                                                                            | no
-| CROWDSEC_API_KEY           | a crowdsec bouncer api key                                                                                   | no
-| CROWDSEC_DISABLE_SSL_CHECK | set this var to disable ssl check                                                                            | no
-| CROWDSEC_CLIENT_CERT       | use crowdsec authentication certificate                                                                      | no
-| CROWDSEC_CLIENT_KEY        | use crowdsec authentication key                                                                              | no
-| CROWDSEC_CLIENT_CA         | use crowdsec authentication certificate authority                                                            | no
+| key                        | description                                                                                                  | mandatory                                    |
+|----------------------------|--------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| UNIFI_CONTROLLER_IP        | the ip of the controller (or fqdn)                                                                           | yes                                          |
+| UNIFI_CONTROLLER_PORT      | port of the controller sometimes 8443 or 443                                                                 | yes                                          |
+| UNIFI_USERNAME             | username of a user (rights levels not tested)                                                                | yes                                          |
+| UNIFI_PASSWORD             | password of the user                                                                                         | yes                                          |
+| UNIFI_SITE_NAME            | name of the "site"                                                                                           | no (default to first one)                    |
+| UNIFI_GROUP_NAME           | groups (comma separated) where the ips will be managed                                                       | yes                                          |
+| UNIFI_GROUP_NAME_V6        | groups (comma separated) where the ips will be managed for ipv6                                              | no (deprecated, add in the UNIFI_GROUP_NAME) |
+| ADD_CHECKSUM               | sha256 of the token to add ip                                                                                | no (but recommended)                         |
+| RM_CHECKSUM                | sha256 of the token to add ip                                                                                | no (default to ADD_CHECKSUM, recommended)    |
+| port                       | the port where the app will listen                                                                           | no (default to 3000)                         |
+| LOG_LEVEL                  | the loglevel, need to be one string of [winston levels](https://github.com/winstonjs/winston#logging-levels) | no (default to info)                         |
+| CROWDSEC_URL               | the url of your crowdsec instance                                                                            | no                                           |
+| CROWDSEC_API_KEY           | a crowdsec bouncer api key                                                                                   | no                                           |
+| CROWDSEC_DISABLE_SSL_CHECK | set this var to disable ssl check                                                                            | no                                           |
+| CROWDSEC_CLIENT_CERT       | use crowdsec authentication certificate                                                                      | no                                           |
+| CROWDSEC_CLIENT_KEY        | use crowdsec authentication key                                                                              | no                                           |
+| CROWDSEC_CLIENT_CA         | use crowdsec authentication certificate authority                                                            | no                                           |
 
 # How to use
 
