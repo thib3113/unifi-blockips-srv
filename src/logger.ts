@@ -1,8 +1,8 @@
-import winston, {LogEntry} from 'winston';
+import winston from 'winston';
 // @ts-ignore
 import type { TransformableInfo } from 'logform';
 
-function logFormatter(info: LogEntry): string {
+function logFormatter(info: TransformableInfo): string {
     const elements: Array<string> = [];
 
     if (info.timestamp) {
