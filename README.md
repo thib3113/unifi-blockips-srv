@@ -4,20 +4,25 @@
 
 ## ENV
 
-| key | description | mandatory |
-|--|--|--
-| UNIFI_CONTROLLER_IP | the ip of the controller (or fqdn) | yes
-| UNIFI_CONTROLLER_PORT | port of the controller sometimes 8443 or 443| yes
-| UNIFI_USERNAME | username of a user (rights levels not tested) | yes
-| UNIFI_PASSWORD | password of the user | yes
-| UNIFI_SITE_NAME | name of the "site" | no (default to first one)
-| UNIFI_GROUP_NAME | groups (comma separated) where the ips will be managed | yes
-| UNIFI_GROUP_NAME_V6 | groups (comma separated) where the ips will be managed for ipv6 | no (deprecated, add in the UNIFI_GROUP_NAME)
-| ADD_CHECKSUM | sha256 of the token to add ip | no (but recommended)
-| RM_CHECKSUM | sha256 of the token to add ip | no (default to ADD_CHECKSUM, recommended)
-| port | the port where the app will listen | no (default to 3000)
-| LOG_LEVEL | the loglevel, need to be one string of [winston levels](https://github.com/winstonjs/winston#logging-levels) | no (default to info)
-
+| key                        | description                                                                                                  | mandatory |
+|----------------------------|--------------------------------------------------------------------------------------------------------------|--
+| UNIFI_CONTROLLER_IP        | the ip of the controller (or fqdn)                                                                           | yes
+| UNIFI_CONTROLLER_PORT      | port of the controller sometimes 8443 or 443                                                                 | yes
+| UNIFI_USERNAME             | username of a user (rights levels not tested)                                                                | yes
+| UNIFI_PASSWORD             | password of the user                                                                                         | yes
+| UNIFI_SITE_NAME            | name of the "site"                                                                                           | no (default to first one)
+| UNIFI_GROUP_NAME           | groups (comma separated) where the ips will be managed                                                       | yes
+| UNIFI_GROUP_NAME_V6        | groups (comma separated) where the ips will be managed for ipv6                                              | no (deprecated, add in the UNIFI_GROUP_NAME)
+| ADD_CHECKSUM               | sha256 of the token to add ip                                                                                | no (but recommended)
+| RM_CHECKSUM                | sha256 of the token to add ip                                                                                | no (default to ADD_CHECKSUM, recommended)
+| port                       | the port where the app will listen                                                                           | no (default to 3000)
+| LOG_LEVEL                  | the loglevel, need to be one string of [winston levels](https://github.com/winstonjs/winston#logging-levels) | no (default to info)
+| CROWDSEC_URL               | the url of your crowdsec instance                                                                            | no
+| CROWDSEC_API_KEY           | a crowdsec bouncer api key                                                                                   | no
+| CROWDSEC_DISABLE_SSL_CHECK | set this var to disable ssl check                                                                            | no
+| CROWDSEC_CLIENT_CERT       | use crowdsec authentication certificate                                                                      | no
+| CROWDSEC_CLIENT_KEY        | use crowdsec authentication key                                                                              | no
+| CROWDSEC_CLIENT_CA         | use crowdsec authentication certificate authority                                                            | no
 
 # How to use
 
@@ -27,9 +32,18 @@ To add an IP to the blocklist :
 to delete an IP
 `DELETE /?token=tatayoyo2&ips[]=127.0.0.1`
 
-token will be check against ADD_CHECKSUM or RM_CHECKSUM . You can use this site to generate your checksum : https://emn178.github.io/online-tools/sha256.html
+To flush all ips :
+`POST /flush?token=tatayoyo`
+
+token will be checked against ADD_CHECKSUM or RM_CHECKSUM . You can use this site to generate your checksum : https://emn178.github.io/online-tools/sha256.html
 
 To secure data in the container, you can pass ENV via `/app/.env` ( respecting .env format ) .
+
+# Crowdsec
+to enable crowdsec you need to set env `CROWDSEC_URL` and `CROWDSEC_API_KET` (or `CROWDSEC_CLIENT_CERT` and `CROWDSEC_CLIENT_KEY` and `CROWDSEC_CLIENT_CA`)
+so it will connect directly to your crowdsec instance .
+
+/!\ Using crowdsec will flush on every startup !
 
 # How to block the Ips
 
@@ -40,7 +54,7 @@ To secure data in the container, you can pass ENV via `/app/.env` ( respecting .
   - in Address Group, create a group (you will need to block one ip to create it)
 - repeat the operation multiple times (one rule/group can block only 9999 ips)
 
-Now, fill the env `UNIFI_GROUP_NAME` with the name of the groups you created. (comma separated)  
+Now, fill the env `UNIFI_GROUP_NAME` with the name of the groups you created. (comma separated)
 
 ## Limitations
 Unifi seems to bug with 10 000 IPs per groups . So, to block more than 9 999 IPs, you will need to pass multiples groups

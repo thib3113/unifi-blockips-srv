@@ -7,6 +7,8 @@ import logger from './logger';
 import { Blocker } from './Blocker';
 import { UnAuthorizedError } from './Errors/UnAuthorizedError';
 import { ErrorWithCode } from './Errors/ErrorWithCode';
+import { BouncerClient } from 'crowdsec-client';
+import fs from 'fs';
 
 export default class App {
     private readonly unifiFWGroupNames: Array<string>;
@@ -16,9 +18,10 @@ export default class App {
     private readonly rmCheckSum?: string;
     private readonly port: number;
 
-    private server: Express;
+    private readonly server: Express;
     private httpServer?: http.Server;
-    private blocker: Blocker;
+    private readonly blocker: Blocker;
+    private readonly crowdsecClient?: BouncerClient;
 
     static async Initializer(): Promise<App> {
         logger.debug('App.Initializer()');
@@ -55,27 +58,73 @@ export default class App {
         logger.debug('App.construct()');
 
         //get FWRule / FWGroups
-        this.unifiFWGroupNames = (process.env.UNIFI_GROUP_NAME || 'IP_BANNED').replace(/\s+/g, '').split(',');
-        this.unifiFWGroupNamesV6 = (process.env.UNIFI_GROUP_NAME_V6 || 'IP_BANNED_V6').replace(/\s+/g, '').split(',');
+        this.unifiFWGroupNames = (process.env.UNIFI_GROUP_NAME ?? 'IP_BANNED').replace(/\s+/g, '').split(',');
+        this.unifiFWGroupNamesV6 = (process.env.UNIFI_GROUP_NAME_V6 ?? 'IP_BANNED_V6').replace(/\s+/g, '').split(',');
 
         this.addCheckSum = process.env.ADD_CHECKSUM;
-        this.rmCheckSum = process.env.RM_CHECKSUM || this.addCheckSum;
+        this.rmCheckSum = process.env.RM_CHECKSUM ?? this.addCheckSum;
         const port = Number(process.env.PORT);
         this.port = port || port === 0 ? port : 3000;
 
         this.blocker = new Blocker(this.currentSite);
 
         this.server = express();
+
+        const {
+            CROWDSEC_URL,
+            CROWDSEC_API_KEY,
+            CROWDSEC_DISABLE_SSL_CHECK,
+            CROWDSEC_CLIENT_CERT,
+            CROWDSEC_CLIENT_KEY,
+            CROWDSEC_CLIENT_CA
+        } = process.env;
+
+        const certAuthentication = CROWDSEC_CLIENT_CERT && CROWDSEC_CLIENT_KEY && CROWDSEC_CLIENT_CA;
+        if (CROWDSEC_URL && (CROWDSEC_API_KEY || certAuthentication)) {
+            if (!certAuthentication) {
+                this.crowdsecClient = new BouncerClient({
+                    timeout: 10000,
+                    url: CROWDSEC_URL,
+                    auth: {
+                        apiKey: CROWDSEC_API_KEY ?? ''
+                    },
+                    strictSSL: !CROWDSEC_DISABLE_SSL_CHECK
+                });
+            } else {
+                const [cert, key, ca] = [CROWDSEC_CLIENT_CERT, CROWDSEC_CLIENT_KEY, CROWDSEC_CLIENT_CA].map((file) => {
+                    try {
+                        return fs.readFileSync(file);
+                    } catch (e) {
+                        throw new Error(`fail to read file: ${file} : ${e}`);
+                    }
+                });
+
+                this.crowdsecClient = new BouncerClient({
+                    url: CROWDSEC_URL,
+                    auth: {
+                        cert,
+                        key,
+                        ca
+                    },
+                    strictSSL: !CROWDSEC_DISABLE_SSL_CHECK
+                });
+            }
+        }
     }
 
-    private validateTokenAndGetIps(tokenBase: string = '', req: Request): Array<string> {
-        const { token: pToken, ips: pIps } = req.query;
+    private validateToken(req: Request, tokenBase: string = '') {
+        const { token: pToken } = req.query;
         const token = ((Array.isArray(pToken) ? pToken.shift() : pToken) || '').toString();
-        // logger.debug('ask to ban ips');
         if (tokenBase && App.getCheckSum(token) != tokenBase) {
             logger.debug('token to add ban invalid');
             throw new UnAuthorizedError();
         }
+    }
+
+    private validateTokenAndGetIps(tokenBase: string = '', req: Request): Array<string> {
+        const { ips: pIps } = req.query;
+
+        this.validateToken(req, tokenBase);
 
         return (Array.isArray(pIps) ? pIps : [pIps])
             .filter((i) => !!i)
@@ -83,10 +132,32 @@ export default class App {
             .filter((v) => !!v);
     }
 
+    private async flush() {
+        await Promise.all([Blocker.blockers.ipv4?.flush(), Blocker.blockers.ipv6?.flush()]);
+    }
+
     public async start(): Promise<void> {
         logger.debug('App.start()');
 
         await this.blocker.start([...this.unifiFWGroupNames, ...this.unifiFWGroupNamesV6]);
+
+        if (this.crowdsecClient) {
+            await this.crowdsecClient.login();
+
+            await this.flush();
+
+            const stream = this.crowdsecClient.Decisions.getStream({
+                scopes: 'ip'
+            });
+            stream.on('added', (decision) => {
+                this.blocker.ban([decision.value]);
+            });
+            stream.on('deleted', (decision) => {
+                this.blocker.unban([decision.value]);
+            });
+
+            stream.start();
+        }
 
         //start webserver
         this.server.post('/', async (req, res) => {
@@ -95,6 +166,24 @@ export default class App {
                 logger.debug('ask to ban ips %s', JSON.stringify(ips));
 
                 this.blocker.ban(ips);
+
+                res.status(200).send();
+            } catch (e) {
+                if (e instanceof ErrorWithCode) {
+                    res.status(e.code).send(e.message);
+                    return;
+                }
+                console.error(e);
+                res.status(500).send();
+            }
+        });
+
+        this.server.post('/flush', async (req, res) => {
+            try {
+                this.validateToken(req, this.addCheckSum);
+                logger.debug('ask to flush');
+
+                await this.flush();
 
                 res.status(200).send();
             } catch (e) {

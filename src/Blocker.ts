@@ -1,38 +1,98 @@
 import { IPBlocker } from './IPBlocker';
-import { FWGroup, Site } from 'unifi-client';
+import { FWGroup, Site, timestampDate } from 'unifi-client';
 import logger from './logger';
 import { Address4, Address6 } from 'ip-address';
+import type { FirewallPolicy } from './firewallPolicy';
 
 type ipBlocker<T extends Address4 | Address6> = T extends Address4 ? IPBlocker<T> : T extends Address6 ? IPBlocker<T> : never;
 
 export class Blocker {
-    static blockers: { ipv4?: IPBlocker<Address4>; ipv6?: IPBlocker<Address6> } = {};
+    static readonly blockers: { ipv4?: IPBlocker<Address4>; ipv6?: IPBlocker<Address6> } = {};
+    private useZoneFirewall: boolean = false;
 
     constructor(readonly currentSite: Site) {}
 
-    public async start(unifiFWGroupNames: Array<string>) {
-        return this.checkGroups(unifiFWGroupNames);
-    }
-
-    private async checkFWGroupsRules(groups: Array<FWGroup>) {
-        logger.debug('App.selectFWRule() : load FW rules');
-        const rules = await this.currentSite.firewall.getRules();
-
-        logger.debug('App.selectFWRule() : %d rules loaded', rules.length);
-
-        const unusedGroups = groups.filter(
-            (group) => !rules.some((rule) => rule.src_firewallgroup_ids.some((srcGroup) => srcGroup === group._id))
-        );
-        if (unusedGroups.length) {
-            throw new Error(`groups ${unusedGroups.map((g) => g.name).join(', ')} seems not configured`);
+    private async checkIfUseZoneFirewall(): Promise<void> {
+        try {
+            this.useZoneFirewall = (
+                await this.currentSite
+                    .getInstance()
+                    .get<
+                        Array<{ _id: string; timestamp: timestampDate; feature: 'ZONE_BASED_FIREWALL' | string }>
+                    >('/site-feature-migration', {
+                        apiVersion: 2
+                    })
+            ).data.some((migration) => migration.feature === 'ZONE_BASED_FIREWALL');
+        } catch (e) {
+            logger.error(`fail to check feature migration : %o`, e);
+            this.useZoneFirewall = false;
         }
     }
 
-    async checkGroups(unifiFWGroupNames: Array<string>): Promise<void> {
-        logger.debug('Blocker.checkGroups()');
+    public async start(unifiFWGroupNames: Array<string>) {
+        await this.checkIfUseZoneFirewall();
+        await this.prepareBlockers(unifiFWGroupNames);
+    }
+
+    private async checkFWGroupsRules(groups: Array<FWGroup>) {
+        logger.debug('Blocker.selectFWRule() : load FW rules');
+
+        if (this.useZoneFirewall) {
+            const externalZone = await (async (): Promise<string> => {
+                let zone: { _id: string; zone_key: string } | undefined;
+                try {
+                    zone = (
+                        await this.currentSite.getInstance().get<Array<{ _id: string; zone_key: string }>>('/firewall/zone', {
+                            apiVersion: 2,
+                            apiPart: true
+                        })
+                    ).data.find((z) => z.zone_key === 'external');
+                } catch (e) {
+                    logger.error(`fail to get external zone: %o`, e);
+                    throw new Error('fail to get external zone');
+                }
+                if (!zone?._id) {
+                    throw new Error('fail to get external zone');
+                }
+
+                return zone._id;
+            })();
+            const policies = (
+                await this.currentSite.getInstance().get<Array<FirewallPolicy>>('/firewall-policies', {
+                    apiVersion: 2,
+                    apiPart: true
+                })
+            ).data;
+            logger.debug('Blocker.selectFWRule() : %d policies loaded', policies.length);
+            const unusedGroups = groups.filter(
+                (group) =>
+                    !policies.some(
+                        (policy) =>
+                            policy.source.zone_id === externalZone &&
+                            ['REJECT', 'BLOCK'].includes(policy.action) &&
+                            policy.source.ip_group_id === group._id
+                    )
+            );
+            if (unusedGroups.length) {
+                throw new Error(`groups ${unusedGroups.map((g) => g.name).join(', ')} seems not configured`);
+            }
+        } else {
+            const rules = await this.currentSite.firewall.getRules();
+            logger.debug('Blocker.selectFWRule() : %d rules loaded', rules.length);
+            const unusedGroups = groups.filter(
+                (group) => !rules.some((rule) => rule.src_firewallgroup_ids.some((srcGroup) => srcGroup === group._id))
+            );
+            if (unusedGroups.length) {
+                throw new Error(`groups ${unusedGroups.map((g) => g.name).join(', ')} seems not configured`);
+            }
+        }
+    }
+
+    async prepareBlockers(unifiFWGroupNames: Array<string>): Promise<void> {
+        logger.debug('Blocker.prepareBlockers()');
         const groups = await this.currentSite.firewall.getGroups();
 
-        logger.debug('Blocker.checkGroups() : %d groups loaded', groups?.length);
+        logger.debug('Blocker.prepareBlockers() : %d groups loaded', groups?.length);
 
         const currentGroups = groups
             .filter((r) => r && unifiFWGroupNames.includes(r.name))
@@ -52,10 +112,10 @@ export class Blocker {
             let blocker: IPBlocker<Address4> | IPBlocker<Address6>;
             switch (g.group_type) {
                 case 'address-group':
-                    blocker = Blocker.blockers.ipv4 = Blocker.blockers.ipv4 || new IPBlocker<Address4>(this.currentSite);
+                    blocker = Blocker.blockers.ipv4 = Blocker.blockers.ipv4 ?? new IPBlocker<Address4>(this.currentSite);
                     break;
                 case 'ipv6-address-group':
-                    blocker = Blocker.blockers.ipv6 = Blocker.blockers.ipv6 || new IPBlocker<Address6>(this.currentSite);
+                    blocker = Blocker.blockers.ipv6 = Blocker.blockers.ipv6 ?? new IPBlocker<Address6>(this.currentSite);
                     break;
                 default:
                     throw new Error(`not supported group type "${g.group_type}"`);

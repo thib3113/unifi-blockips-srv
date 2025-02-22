@@ -14,33 +14,40 @@
   "license": "UNLICENSED",
   "dependencies": {
     "app-root-path": "3.1.0",
-    "dotenv": "16.3.1",
-    "express": "4.18.2",
-    "ip-address": "9.0.5",
+    "crowdsec-client": "^1.0.0",
+    "dotenv": "16.4.7",
+    "express": "4.21.2",
+    "ip-address": "10.0.1",
     "source-map-support": "0.5.21",
-    "ts-node": "10.9.1",
-    "unifi-client": "0.11.0",
-    "winston": "^3.11.0"
+    "ts-node": "10.9.2",
+    "unifi-client": "0.11.1",
+    "winston": "^3.17.0"
   },
   "files": [
     "build",
     "ecosystem.config.js"
   ],
   "devDependencies": {
-    "@tsconfig/node14": "14.1.0",
-    "@types/express": "4.17.21",
-    "@types/jest": "29.5.8",
-    "@types/node": "20.9.0",
-    "@types/supertest": "2.0.16",
+    "@tsconfig/node14": "14.1.2",
+    "@types/express": "5.0.0",
+    "@types/jest": "29.5.14",
+    "@types/node": "22.13.4",
+    "@types/supertest": "6.0.2",
     "@typescript-eslint/eslint-plugin": "6.10.0",
     "@typescript-eslint/parser": "6.10.0",
     "eslint": "8.53.0",
     "eslint-config-prettier": "9.0.0",
     "eslint-plugin-prettier": "5.0.1",
     "jest": "29.7.0",
-    "prettier": "3.0.3",
-    "supertest": "6.3.3",
-    "ts-jest": "29.1.1",
-    "typescript": "5.2.2"
+    "prettier": "3.5.1",
+    "supertest": "7.0.0",
+    "ts-jest": "29.2.5",
+    "typescript": "5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "bufferutil",
+      "utf-8-validate"
+    ]
   }
 }

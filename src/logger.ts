@@ -1,13 +1,8 @@
-import winston from 'winston';
+import winston, {LogEntry} from 'winston';
+// @ts-ignore
+import type { TransformableInfo } from 'logform';
 
-// come from logform@^2.2.0, actually used by winston@3.3.3
-interface TransformableInfo {
-    level: string;
-    message: string;
-    [key: string]: any;
-}
-
-function logFormatter(info: TransformableInfo): string {
+function logFormatter(info: LogEntry): string {
     const elements: Array<string> = [];
 
     if (info.timestamp) {
