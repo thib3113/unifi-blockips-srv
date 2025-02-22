@@ -35,7 +35,7 @@ to delete an IP
 To flush all ips :
 `POST /flush?token=tatayoyo`
 
-token will be checked against ADD_CHECKSUM or RM_CHECKSUM . You can use this site to generate your checksum : https://emn178.github.io/online-tools/sha256.html
+token will be checked against `ADD_CHECKSUM` or `RM_CHECKSUM` (flush will use `RM_CHECKSUM`) . You can use this site to generate your checksum : https://emn178.github.io/online-tools/sha256.html
 
 To secure data in the container, you can pass ENV via `/app/.env` ( respecting .env format ) .
 

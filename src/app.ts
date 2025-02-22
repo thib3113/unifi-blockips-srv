@@ -182,7 +182,7 @@ export default class App {
 
         this.server.post('/flush', async (req, res) => {
             try {
-                this.validateToken(req, this.addCheckSum);
+                this.validateToken(req, this.rmCheckSum);
                 logger.debug('ask to flush');
 
                 await this.flush();
