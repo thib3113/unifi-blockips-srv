@@ -88,7 +88,8 @@ export default class App {
                     auth: {
                         apiKey: CROWDSEC_API_KEY ?? ''
                     },
-                    strictSSL: !CROWDSEC_DISABLE_SSL_CHECK
+                    strictSSL: !CROWDSEC_DISABLE_SSL_CHECK,
+                    userAgent: 'unifi-blockips/1.6.0'
                 });
             } else {
                 const [cert, key, ca] = [CROWDSEC_CLIENT_CERT, CROWDSEC_CLIENT_KEY, CROWDSEC_CLIENT_CA].map((file) => {
@@ -100,6 +101,7 @@ export default class App {
                 });
 
                 this.crowdsecClient = new BouncerClient({
+                    timeout: 10000,
                     url: CROWDSEC_URL,
                     auth: {
                         cert,
