@@ -1,6 +1,6 @@
-FROM node:lts-alpine as builder
+FROM node:lts-alpine AS builder
 
-RUN apk add --no-cache build-base python3 py3-pip make jq
+RUN apk add --no-cache build-base jq make py3-pip python3
 
 RUN npm install -g npm && \
     npm install -g pnpm
@@ -16,7 +16,7 @@ RUN cd /tmp/src && \
     pnpm install --frozen-lockfile && \
     pnpm build && \
     pnpm prune --prod && \
-    for file in $(jq -r '.files[]' package.json); do cp -R $file /app/$file; done && \
+    for file in $(jq -r '.files[]' package.json); do cp -R "$file" "/app/$file"; done && \
     cp package.json /app/ && \
     cp -R node_modules /app/
 
