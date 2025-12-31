@@ -70,7 +70,7 @@ jobs:
         run: find ./coverage -type f -exec sed -i -e "s@$(pwd)@<root>@g" {} \;
         if: always()
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: coverage
           path: |
@@ -101,7 +101,7 @@ jobs:
       - name: replace path in coverage files
         run: find ./coverage -type f -exec sed -i -e "s@$(pwd)@<root>@g" {} \;
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: coverage-eslint
           path: ./coverage/eslint-report.json
