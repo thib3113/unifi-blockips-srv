@@ -37,8 +37,8 @@ importers:
         version: 3.17.0
     devDependencies:
       '@tsconfig/node14':
-        specifier: 14.1.2
-        version: 14.1.2
+        specifier: 14.1.8
+        version: 14.1.8
       '@types/express':
         specifier: 5.0.0
         version: 5.0.0
@@ -440,8 +440,8 @@ packages:
   '@tsconfig/node14@1.0.3':
     resolution: {integrity: sha512-ysT8mhdixWK6Hw3i1V2AeRqZ5WfXg1G43mqoYlM2nc6388Fq5jcXyr5mRsqViLx/GJYdoL0bfXD8nmF+Zn/Iow==}
 
-  '@tsconfig/node14@14.1.2':
-    resolution: {integrity: sha512-1vncsbfCZ3TBLPxesRYz02Rn7SNJfbLoDVkcZ7F/ixOV6nwxwgdhD1mdPcc5YQ413qBJ8CvMxXMFfJ7oawjo7Q==}
+  '@tsconfig/node14@14.1.8':
+    resolution: {integrity: sha512-SjGT+qPvh8Uhc849yNMD0ZIPr69AyB7Z46nMqhrI3gCVocd6mhI0jP4YE4onO/ufpmengRfTxNMpdpKEp2xRIg==}
 
   '@tsconfig/node16@1.0.4':
     resolution: {integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==}
@@ -2166,10 +2166,12 @@ packages:
   superagent@9.0.2:
     resolution: {integrity: sha512-xuW7dzkUpcJq7QnhOsnNUgtYp3xRwpt2F7abdRYIpCsAt0hhUqia0EdxyXZQQpNmGtsCzYHryaKSV3q3GJnq7w==}
     engines: {node: '>=14.18.0'}
+    deprecated: Please upgrade to superagent v10.2.2+, see release notes at https://github.com/forwardemail/superagent/releases/tag/v10.2.2 - maintenance is supported by Forward Email @ https://forwardemail.net
 
   supertest@7.0.0:
     resolution: {integrity: sha512-qlsr7fIC0lSddmA3tzojvzubYxvlGtzumcdHgPwbFWMISQwL22MhM2Y3LNt+6w9Yyx7559VW5ab70dgphm8qQA==}
     engines: {node: '>=14.18.0'}
+    deprecated: Please upgrade to supertest v7.1.3+, see release notes at https://github.com/forwardemail/supertest/releases/tag/v7.1.3 - maintenance is supported by Forward Email @ https://forwardemail.net
 
   supports-color@5.5.0:
     resolution: {integrity: sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow==}
@@ -2897,7 +2899,7 @@ snapshots:
 
   '@tsconfig/node14@1.0.3': {}
 
-  '@tsconfig/node14@14.1.2': {}
+  '@tsconfig/node14@14.1.8': {}
 
   '@tsconfig/node16@1.0.4': {}
 
