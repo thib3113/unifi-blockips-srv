@@ -21,7 +21,7 @@ jobs:
       matrix:
         node-version: [ lts/* ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -86,7 +86,7 @@ jobs:
     name: eslint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: install eslint
         run: npm install
       - name: run eslint
