@@ -1,3 +1,3 @@
-declare module "app-root-path" {
-    export const path: string
+declare module 'app-root-path' {
+    export const path: string;
 }

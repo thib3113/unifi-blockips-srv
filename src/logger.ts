@@ -8,7 +8,7 @@ function logFormatter(info: TransformableInfo): string {
         elements.push(`[${info.timestamp}]`);
     }
 
-    let message = info.message;
+    const message = info.message;
     let strMessage = '';
     if (message) {
         if (typeof message === 'string') {
