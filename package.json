@@ -2,9 +2,9 @@
   "name": "unifi-blockips-srv",
   "version": "1.6.0",
   "scripts": {
-    "debug": "tsc && node -r source-map-support/register build/index.js",
+    "debug": "node build.mjs && node -r source-map-support/register build/index.js",
     "start": "node -r source-map-support/register build/index.js",
-    "build": "tsc",
+    "build": "node build.mjs",
     "test": "jest",
     "lint": "eslint -f unix \"src/**/*.{ts,tsx}\"",
     "ci:eslint": "eslint -f json -o ./coverage/eslint-report.json -f unix \"src/**/*.{ts,tsx}\"",
@@ -35,6 +35,7 @@
     "@types/supertest": "6.0.3",
     "@typescript-eslint/eslint-plugin": "6.10.0",
     "@typescript-eslint/parser": "6.10.0",
+    "esbuild": "^0.28.0",
     "eslint": "8.53.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.4",
@@ -44,5 +45,20 @@
     "supertest": "7.0.0",
     "ts-jest": "29.2.5",
     "typescript": "5.9.3"
+  },
+  "main": "build/index.js",
+  "module": "build/index.mjs",
+  "types": "build/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./build/index.d.ts",
+        "default": "./build/index.mjs"
+      },
+      "require": {
+        "types": "./build/index.d.cts",
+        "default": "./build/index.cjs"
+      }
+    }
   }
 }

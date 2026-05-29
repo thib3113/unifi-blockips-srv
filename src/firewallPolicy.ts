@@ -90,7 +90,7 @@ export enum Protocol {
 
 export interface Schedule {
     mode: Mode;
-    repeat_on_days: Array<any>;
+    repeat_on_days: Array<unknown>;
     time_all_day: boolean;
     date_end?: Date;
     date_start?: Date;

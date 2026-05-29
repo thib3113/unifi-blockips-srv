@@ -160,11 +160,11 @@ export class Blocker {
 
     public ban(ips: Array<string>) {
         //as any, because blocker return come from the type of the ip
-        ips.map((ip) => this.getIpObject(ip)).forEach((ip) => this.getBlocker(ip)?.ban(ip as any));
+        ips.map((ip) => this.getIpObject(ip)).forEach((ip) => this.getBlocker(ip)?.ban(ip as unknown as Address4 & Address6));
     }
 
     public unban(ips: Array<string>) {
         //as any, because blocker return come from the type of the ip
-        ips.map((ip) => this.getIpObject(ip)).forEach((ip) => this.getBlocker(ip)?.unban(ip as any));
+        ips.map((ip) => this.getIpObject(ip)).forEach((ip) => this.getBlocker(ip)?.unban(ip as unknown as Address4 & Address6));
     }
 }
