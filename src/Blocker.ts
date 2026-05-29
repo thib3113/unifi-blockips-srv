@@ -123,6 +123,7 @@ export class Blocker {
 
             blocker.addGroup(g);
         });
+        logger.info('Successfully initialized and verified %d firewall groups', currentGroups.length);
     }
 
     private getIpObject(ip: string): Address4 | Address6 {

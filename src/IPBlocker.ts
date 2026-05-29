@@ -89,6 +89,7 @@ export class IPBlocker<T extends Address4 | Address6> {
             });
 
             await Promise.all(groups.map((g) => g.save()));
+            logger.info(`${blockerName} : Successfully flushed %d IPs to Unifi across %d groups`, IPs.length, groups.length);
             logger.debug(`${blockerName} : end tasks`);
         })();
     }
