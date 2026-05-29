@@ -1,0 +1,3 @@
+allowBuilds:
+  - bufferutil
+  - utf-8-validate

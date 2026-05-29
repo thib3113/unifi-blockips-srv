@@ -13,9 +13,9 @@ COPY . /tmp/src
 
 RUN cd /tmp/src && \
     echo "node-linker=hoisted" >> .npmrc &&\
-    pnpm install --frozen-lockfile --ignore-scripts && \
+    pnpm install --frozen-lockfile && \
     pnpm build && \
-    pnpm prune --prod --ignore-scripts && \
+    pnpm prune --prod && \
     for file in $(jq -r '.files[]' package.json); do cp -R "$file" "/app/$file"; done && \
     cp package.json /app/ && \
     cp -R node_modules /app/
