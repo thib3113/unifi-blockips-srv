@@ -2,7 +2,7 @@ export interface FirewallPolicy {
     _id: string;
     action: 'ALLOW' | 'BLOCK' | 'REJECT';
     connection_state_type: ConnectionStateType;
-    connection_states: ConnectionState[];
+    connection_states: Array<ConnectionState>;
     create_allow_respond: boolean;
     destination: Destination;
     enabled: boolean;
@@ -42,11 +42,11 @@ export interface Destination {
     matching_target: ICMPTypename;
     port_matching_type: Type;
     zone_id: string;
-    ips?: string[];
+    ips?: Array<string>;
     match_opposite_ips?: boolean;
     matching_target_type?: Type;
     port?: string;
-    app_ids?: number[];
+    app_ids?: Array<number>;
     ip_group_id?: string;
     port_group_id?: string;
 }
@@ -90,7 +90,7 @@ export enum Protocol {
 
 export interface Schedule {
     mode: Mode;
-    repeat_on_days: any[];
+    repeat_on_days: Array<any>;
     time_all_day: boolean;
     date_end?: Date;
     date_start?: Date;
@@ -107,15 +107,15 @@ export interface Source {
     matching_target: MatchingTarget;
     port_matching_type: Type;
     zone_id: string;
-    ips?: string[];
+    ips?: Array<string>;
     match_mac?: boolean;
     match_opposite_ips?: boolean;
     matching_target_type?: Type;
     port?: string;
-    client_macs?: string[];
+    client_macs?: Array<string>;
     ip_group_id?: string;
     match_opposite_networks?: boolean;
-    network_ids?: string[];
+    network_ids?: Array<string>;
 }
 
 export enum MatchingTarget {

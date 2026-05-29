@@ -39,6 +39,8 @@ token will be checked against `ADD_CHECKSUM` or `RM_CHECKSUM` (flush will use `R
 
 To secure data in the container, you can pass ENV via `/app/.env` ( respecting .env format ) .
 
+**Note on Docker Secrets:** You can also pass environment variables using Docker secrets by appending `_FILE` to any environment variable name and setting its value to the path of the file containing the secret. For example, setting `UNIFI_PASSWORD_FILE=/run/secrets/unifi_password` will automatically set the `UNIFI_PASSWORD` environment variable to the contents of that file on startup. This is applied globally to any environment variable.
+
 # Crowdsec
 to enable crowdsec you need to set env `CROWDSEC_URL` and `CROWDSEC_API_KET` (or `CROWDSEC_CLIENT_CERT` and `CROWDSEC_CLIENT_KEY` and `CROWDSEC_CLIENT_CA`)
 so it will connect directly to your crowdsec instance .
