@@ -104,7 +104,6 @@ describe('server', () => {
             attr_no_delete: true,
             role: 'admin',
             role_hotspot: false,
-            getInstance: jest.fn().mockImplementation(() => ({ get: jest.fn().mockResolvedValue({ data: [] }) })),
             // @ts-ignore
             firewall: {
                 getRules: getRulesMock,
