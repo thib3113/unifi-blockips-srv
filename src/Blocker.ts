@@ -35,7 +35,7 @@ export class Blocker {
     }
 
     private async checkFWGroupsRules(groups: Array<FWGroup>) {
-        logger.info('Blocker.selectFWRule() : load FW rules');
+        logger.debug('Blocker.selectFWRule() : load FW rules');
 
         if (this.useZoneFirewall) {
             const externalZone = await (async (): Promise<string> => {
@@ -63,7 +63,7 @@ export class Blocker {
                     apiPart: true
                 })
             ).data;
-            logger.info('Blocker.selectFWRule() : %d policies loaded', policies.length);
+            logger.debug('Blocker.selectFWRule() : %d policies loaded', policies.length);
             const unusedGroups = groups.filter(
                 (group) =>
                     !policies.some(
@@ -78,7 +78,7 @@ export class Blocker {
             }
         } else {
             const rules = await this.currentSite.firewall.getRules();
-            logger.info('Blocker.selectFWRule() : %d rules loaded', rules.length);
+            logger.debug('Blocker.selectFWRule() : %d rules loaded', rules.length);
             const unusedGroups = groups.filter(
                 (group) => !rules.some((rule) => rule.src_firewallgroup_ids.some((srcGroup) => srcGroup === group._id))
             );
@@ -89,10 +89,10 @@ export class Blocker {
     }
 
     async prepareBlockers(unifiFWGroupNames: Array<string>): Promise<void> {
-        logger.info('Blocker.prepareBlockers()');
+        logger.debug('Blocker.prepareBlockers()');
         const groups = await this.currentSite.firewall.getGroups();
 
-        logger.info('Blocker.prepareBlockers() : %d groups loaded', groups?.length);
+        logger.debug('Blocker.prepareBlockers() : %d groups loaded', groups?.length);
 
         const currentGroups = groups
             .filter((r) => r && unifiFWGroupNames.includes(r.name))
@@ -123,6 +123,7 @@ export class Blocker {
 
             blocker.addGroup(g);
         });
+        logger.info('Successfully initialized and verified %d firewall groups', currentGroups.length);
     }
 
     private getIpObject(ip: string): Address4 | Address6 {
@@ -159,13 +160,11 @@ export class Blocker {
 
     public ban(ips: Array<string>) {
         //as any, because blocker return come from the type of the ip
-        logger.info(`Banning IPv4/IPv6 IPs: ${ips.length} IPs total`);
         ips.map((ip) => this.getIpObject(ip)).forEach((ip) => this.getBlocker(ip)?.ban(ip as any));
     }
 
     public unban(ips: Array<string>) {
         //as any, because blocker return come from the type of the ip
-        logger.info(`Unbanning IPv4/IPv6 IPs: ${ips.length} IPs total`);
         ips.map((ip) => this.getIpObject(ip)).forEach((ip) => this.getBlocker(ip)?.unban(ip as any));
     }
 }
