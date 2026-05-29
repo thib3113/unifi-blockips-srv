@@ -49,7 +49,7 @@ export class IPBlocker<T extends Address4 | Address6> {
             // get name from group
             const blockerName = this.getBlockerName();
 
-            logger.debug(`${blockerName} addTask : execute %d tasks`, tasks.length);
+            logger.info(`${blockerName} addTask : execute %d tasks`, tasks.length);
 
             const groups = await this.getFWGroups();
 
@@ -85,11 +85,11 @@ export class IPBlocker<T extends Address4 | Address6> {
             }
 
             groups.forEach((g) => {
-                logger.debug(`${blockerName} : %d members in %s`, g.group_members.length, g.name);
+                logger.info(`${blockerName} : %d members in %s`, g.group_members.length, g.name);
             });
 
             await Promise.all(groups.map((g) => g.save()));
-            logger.debug(`${blockerName} : end tasks`);
+            logger.info(`${blockerName} : end tasks`);
         })();
     }
 
@@ -125,7 +125,7 @@ export class IPBlocker<T extends Address4 | Address6> {
 
     public async flush() {
         const blockerName = this.getBlockerName();
-        logger.debug(`${blockerName} flush`);
+        logger.info(`${blockerName} flush`);
         const groups = await this.getFWGroups();
 
         const defaultIP = this.getDefaultIP();
@@ -135,7 +135,7 @@ export class IPBlocker<T extends Address4 | Address6> {
                 await g.save();
             })
         );
-        logger.debug(`${blockerName} end flush`);
+        logger.info(`${blockerName} end flush`);
     }
 
     private async getFWGroups(): Promise<Array<FWGroup>> {

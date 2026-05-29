@@ -146,6 +146,7 @@ export default class App {
         if (this.crowdsecClient) {
             await this.crowdsecClient.login();
 
+            logger.info('Flushing all IPs');
             await this.flush();
 
             const stream = this.crowdsecClient.Decisions.getStream({
@@ -167,6 +168,7 @@ export default class App {
                 const ips = this.validateTokenAndGetIps(this.addCheckSum, req);
                 logger.debug('ask to ban ips %s', JSON.stringify(ips));
 
+                logger.info(`Banning ${ips.length} IPs`);
                 this.blocker.ban(ips);
 
                 res.status(200).send();
@@ -203,6 +205,7 @@ export default class App {
                 const ips = this.validateTokenAndGetIps(this.rmCheckSum, req);
                 logger.debug('ask to unban ips %s', JSON.stringify(ips));
 
+                logger.info(`Unbanning ${ips.length} IPs`);
                 this.blocker.unban(ips);
 
                 res.status(200).send();
