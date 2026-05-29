@@ -36,8 +36,6 @@ if (tmpLogLevel && logLevels.includes(tmpLogLevel.toLowerCase())) {
     logLevel = tmpLogLevel;
 }
 
-console.log(`set logLevel to : ${logLevel}`);
-
 export const logger = winston.createLogger({
     level: logLevel,
     format: winston.format.json(),
@@ -58,3 +56,4 @@ export const logger = winston.createLogger({
 });
 
 export default logger;
+logger.info(`set logLevel to : ${logLevel}`);

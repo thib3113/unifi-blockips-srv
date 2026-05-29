@@ -20,7 +20,8 @@ for (const envName of Object.keys(process.env)) {
                     process.env[envNameTarget] = fs.readFileSync(filePath, 'utf8').trim();
                 }
             } catch (e) {
-                console.error(`Error reading ${envNameTarget} from ${envName}: ${e}`);
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                require('./logger').logger.error(`Error reading ${envNameTarget} from ${envName}: ${e}`);
             }
         }
     }

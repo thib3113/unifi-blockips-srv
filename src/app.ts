@@ -175,7 +175,7 @@ export default class App {
                     res.status(e.code).send(e.message);
                     return;
                 }
-                console.error(e);
+                logger.error('Error in request', e);
                 res.status(500).send();
             }
         });
@@ -193,7 +193,7 @@ export default class App {
                     res.status(e.code).send(e.message);
                     return;
                 }
-                console.error(e);
+                logger.error('Error in request', e);
                 res.status(500).send();
             }
         });
@@ -211,7 +211,7 @@ export default class App {
                     res.status(e.code).send(e.message);
                     return;
                 }
-                console.error(e);
+                logger.error('Error in request', e);
                 res.status(500).send();
             }
         });
