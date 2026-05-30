@@ -3,6 +3,7 @@ import Controller, { Site } from 'unifi-client';
 import request from 'supertest';
 
 jest.mock('unifi-client');
+jest.mock('crowdsec-client');
 
 process.env.UNIFI_CONTROLLER_URL = 'http://127.0.0.1';
 process.env.UNIFI_USERNAME = 'UNIFI_USERNAME';
@@ -10,6 +11,8 @@ process.env.UNIFI_PASSWORD = 'UNIFI_PASSWORD';
 process.env.UNIFI_SITE_NAME = 'default';
 process.env.UNIFI_GROUP_NAME = 'UNIFI_GROUP_NAME';
 process.env.UNIFI_GROUP_NAME_V6 = 'UNIFI_GROUP_NAME_V6';
+delete process.env.CROWDSEC_URL;
+delete process.env.CROWDSEC_API_KEY;
 const ADD_CHECKSUM = 'ADD_CHECKSUM';
 const RM_CHECKSUM = 'RM_CHECKSUM';
 process.env.ADD_CHECKSUM = 'd63f8b1d376191c26fd8c3754c96553b7506444206f329a1ad890a6dc2e56051'; //ADD_CHECKSUM
@@ -108,7 +111,10 @@ describe('server', () => {
             firewall: {
                 getRules: getRulesMock,
                 getGroups: getGroupsMock
-            }
+            },
+            getInstance: jest.fn().mockReturnValue({
+                get: jest.fn().mockResolvedValue({ data: [] })
+            })
         };
 
         app = new App(site);

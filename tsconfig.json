@@ -3,7 +3,8 @@
   "compilerOptions": {
     "sourceMap": true,
     "allowJs": true,
-    "outDir": "build"
+    "outDir": "build",
+    "rootDir": "src"
   },
   "exclude": [
     "node_modules",
