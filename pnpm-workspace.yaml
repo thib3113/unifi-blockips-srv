@@ -1,6 +1,8 @@
 packages:
   - '.'
 
+minimumReleaseAge: 0
+
 allowBuilds:
   bufferutil: true
   utf-8-validate: true
